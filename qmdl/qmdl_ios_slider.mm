@@ -1,0 +1,79 @@
+
+#include "qmdl_config.h"
+
+#ifdef QMDL_VER_IOS
+
+#include "qmdl_ios.h"
+
+
+// -- OC类定义实现
+
+@interface QIOSUISlider : UISlider
+{
+	QMDL mpmodule;
+}
+
+@property(nonatomic, assign) QMDL module;
+
+- (id)initWithModule:(QMDL)module;
+
+@end
+
+@implementation QIOSUISlider
+
+@synthesize module = mpmodule;
+
+- (id)initWithModule:(QMDL)module
+{
+	self = [super init];
+	if(self == nil)
+	{
+		return nil;
+	}
+	self.module = module;
+	
+	return self;
+}
+
+@end
+
+
+// -- C++类实现
+
+QUISlider::QUISlider()
+{
+}
+
+QUISlider::~QUISlider()
+{
+}
+
+QINT QUISlider::MakeModuleBegin(QMDL env, QMDL parent, QXML mxml, QSTR url)
+{
+	QSTR pid;
+	QINT ntag;
+	
+	if(midview != nil)
+	{
+		return QSCN_OK;
+	}
+	pid = (QSTR)qxmlGetId(mxml);
+	if(pid != NULL && qstrcmp(QSTR_CMP_ICASE, (QPNT)pid, (QPNT)qmdl_name(QUISlider), 0))
+	{
+		ntag = 0;
+		midview = FindViewByTag(env, parent, NULL, mxml, url, &ntag);
+		if(midview == nil)
+		{
+			midview = [[QIOSUISlider alloc] initWithModule:this];
+			((QIOSUISlider *)midview).module = this;
+			if(ntag != 0)
+			{
+				((UIView *)midview).tag = ntag;
+			}
+		}
+	}
+	
+	return QSCN_OK;
+}
+
+#endif
