@@ -237,67 +237,6 @@ static QINT QViewHasLayoutFinished(QBaseView *view, QINT attr)
 	return 0;
 }
 
-static QINT QViewAddLayoutRelation(QBaseView *view, QINT attr, struct qmdl_layout_item *relation)
-{
-	QHDL hitem;
-	QBaseView *pdstview;
-	struct qmdl_layout_item *pitem;
-	
-	if(view == NULL || relation == NULL)
-	{
-		return QNO_FAIL;
-	}
-	pdstview = relation->pdstview;
-	if(pdstview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	switch(attr)
-	{
-		case QLayoutWidth:
-		case QLayoutHeight:
-		case QLayoutLeft:
-		case QLayoutTop:
-		case QLayoutRight:
-		case QLayoutBottom:
-			break;
-			
-		default:
-			return QNO_FAIL;
-			break;
-	}
-	hitem = qlinkHead(QLINK_BL_RELATION, pdstview->mstlayout.hrelation);
-	while(hitem)
-	{
-		pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hitem);
-		if(pitem != NULL)
-		{
-			if(pitem->psrcview == view && pitem->nsrcattr == attr)
-			{
-				break;
-			}
-		}
-		hitem = qlinkNext(QLINK_BL_RELATION, hitem);
-	}
-	if(hitem == NULL)
-	{
-		hitem = qlinkMake(QLINK_BL_RELATION, NULL, NULL, sizeof(struct qmdl_layout_item));
-		if(hitem == NULL)
-		{
-			return QNO_FAIL;
-		}
-		pdstview->mstlayout.hrelation = qlinkInsertNext(QLINK_BL_RELATION, pdstview->mstlayout.hrelation, NULL, hitem);
-	}
-	pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hitem);
-	if(pitem == NULL)
-	{
-		return QNO_FAIL;
-	}
-	memcpy(pitem, relation, sizeof(struct qmdl_layout_item));
-	
-	return QNO_OK;
-}
-
 static QINT QViewGetRealPosition(struct qmdl_layout_item *item, QINT position)
 {
 	QMDL pparentmdl;
@@ -391,19 +330,85 @@ static QINT QViewGetRealPosition(struct qmdl_layout_item *item, QINT position)
 	return nposition;
 }
 
-static QINT QViewFinishLayoutRelation(QBaseView *view)
+static QINT QViewAddLayoutRelation(QBaseView *view, QINT attr, struct qmdl_layout_item *relation)
 {
 	QHDL hitem;
+	QBaseView *pdstview;
+	struct qmdl_layout_item *pitem;
+	
+	if(view == NULL || relation == NULL)
+	{
+		return QNO_FAIL;
+	}
+	pdstview = relation->pdstview;
+	if(pdstview == NULL)
+	{
+		return QNO_FAIL;
+	}
+	switch(attr)
+	{
+		case QLayoutWidth:
+		case QLayoutHeight:
+		case QLayoutLeft:
+		case QLayoutTop:
+		case QLayoutRight:
+		case QLayoutBottom:
+			break;
+			
+		default:
+			return QNO_FAIL;
+			break;
+	}
+	hitem = qlinkHead(QLINK_BL_RELATION, pdstview->mstlayout.hrelation);
+	while(hitem)
+	{
+		pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hitem);
+		if(pitem != NULL)
+		{
+			if(pitem->psrcview == view && pitem->nsrcattr == attr)
+			{
+				break;
+			}
+		}
+		hitem = qlinkNext(QLINK_BL_RELATION, hitem);
+	}
+	if(hitem == NULL)
+	{
+		hitem = qlinkMake(QLINK_BL_RELATION, NULL, NULL, sizeof(struct qmdl_layout_item));
+		if(hitem == NULL)
+		{
+			return QNO_FAIL;
+		}
+		pdstview->mstlayout.hrelation = qlinkInsertNext(QLINK_BL_RELATION, pdstview->mstlayout.hrelation, NULL, hitem);
+	}
+	pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hitem);
+	if(pitem == NULL)
+	{
+		return QNO_FAIL;
+	}
+	memcpy(pitem, relation, sizeof(struct qmdl_layout_item));
+	pitem->nflag &= ~QLayoutFlagFinished;
+	
+	return QNO_OK;
+}
+
+static QINT QViewFinishLayoutRelation(QBaseView *view)
+{
+	QHDL hitem, hprev;
 	QHDL vpitem[QSCN_STACK_CNT];
 	struct qmdl_layout_item *pitem;
 	QBaseView *vpview[QSCN_STACK_CNT];
 	QBaseView *pcurview, *psrcview, *pdstview, *pchild, *pparent;
-	QINT ndepty, nposition, nlflag, ntflag, nrflag, nbflag, nwflag, nhflag;
+	QINT ndepty, nposition, nlflag, ntflag, nrflag, nbflag;
 	
 	pcurview = view;
 	if(pcurview == NULL)
 	{
 		return QNO_FAIL;
+	}
+	if(pcurview->mstlayout.hrelation == NULL)
+	{
+		return QNO_OK;
 	}
 	ndepty = 0;
 	vpitem[0] = NULL;
@@ -414,11 +419,11 @@ static QINT QViewFinishLayoutRelation(QBaseView *view)
 		while(hitem)
 		{
 			pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hitem);
-			if(pitem != NULL)
+			if(pitem != NULL && !(pitem->nflag&QLayoutFlagFinished))
 			{
 				psrcview = pitem->psrcview;
 				pdstview = pitem->pdstview;
-				if(psrcview != NULL && pdstview != NULL && QViewHasLayoutFinished(pcurview, pitem->ndstattr))
+				if(psrcview != NULL && pdstview != NULL && QViewHasLayoutFinished(pdstview, pitem->ndstattr))
 				{
 					nposition = 0;
 					switch(pitem->ndstattr)
@@ -497,35 +502,29 @@ static QINT QViewFinishLayoutRelation(QBaseView *view)
 							break;
 							
 						case QLayoutLeft:
-							psrcview->mstlayout.rcposition.left = nposition;
-							nwflag = QViewHasLayoutFinished(psrcview, QLayoutWidth);
-							nrflag = QViewHasLayoutFinished(psrcview, QLayoutRight);
-							if(nwflag && !nrflag)
+							if(QViewHasLayoutFinished(psrcview, QLayoutWidth))
 							{
-								psrcview->mstlayout.rcposition.right = nposition+psrcview->mstlayout.rcposition.right;
+								psrcview->mstlayout.rcposition.right = nposition+QRECTW(psrcview->mstlayout.rcposition);
 								QViewSetLayoutFinished(psrcview, QLayoutRight, 1);
 							}
+							psrcview->mstlayout.rcposition.left = nposition;
 							QViewSetLayoutFinished(psrcview, QLayoutLeft, 1);
 							break;
 							
 						case QLayoutTop:
-							psrcview->mstlayout.rcposition.top = nposition;
-							nhflag = QViewHasLayoutFinished(psrcview, QLayoutHeight);
-							nbflag = QViewHasLayoutFinished(psrcview, QLayoutBottom);
-							if(nhflag && !nbflag)
+							if(QViewHasLayoutFinished(psrcview, QLayoutHeight))
 							{
-								psrcview->mstlayout.rcposition.bottom = nposition+psrcview->mstlayout.rcposition.bottom;
+								psrcview->mstlayout.rcposition.bottom = nposition+QRECTH(psrcview->mstlayout.rcposition);
 								QViewSetLayoutFinished(psrcview, QLayoutBottom, 1);
 							}
+							psrcview->mstlayout.rcposition.top = nposition;
 							QViewSetLayoutFinished(psrcview, QLayoutTop, 1);
 							break;
 							
 						case QLayoutRight:
-							nwflag = QViewHasLayoutFinished(psrcview, QLayoutWidth);
-							nlflag = QViewHasLayoutFinished(psrcview, QLayoutLeft);
-							if(nwflag && !nlflag)
+							if(QViewHasLayoutFinished(psrcview, QLayoutWidth))
 							{
-								psrcview->mstlayout.rcposition.left = nposition-psrcview->mstlayout.rcposition.right;
+								psrcview->mstlayout.rcposition.left = nposition-QRECTW(psrcview->mstlayout.rcposition);
 								QViewSetLayoutFinished(psrcview, QLayoutLeft, 1);
 							}
 							psrcview->mstlayout.rcposition.right = nposition;
@@ -533,17 +532,16 @@ static QINT QViewFinishLayoutRelation(QBaseView *view)
 							break;
 							
 						case QLayoutBottom:
-							nhflag = QViewHasLayoutFinished(psrcview, QLayoutHeight);
-							ntflag = QViewHasLayoutFinished(psrcview, QLayoutTop);
-							if(nhflag && !ntflag)
+							if(QViewHasLayoutFinished(psrcview, QLayoutHeight))
 							{
-								psrcview->mstlayout.rcposition.top = nposition-psrcview->mstlayout.rcposition.bottom;
+								psrcview->mstlayout.rcposition.top = nposition-QRECTH(psrcview->mstlayout.rcposition);
 								QViewSetLayoutFinished(psrcview, QLayoutTop, 1);
 							}
 							psrcview->mstlayout.rcposition.bottom = nposition;
 							QViewSetLayoutFinished(psrcview, QLayoutBottom, 1);
 							break;
 					}
+					pitem->nflag |= QLayoutFlagFinished;
 				}
 			}
 			hitem = qlinkNext(QLINK_BL_RELATION, hitem);
@@ -560,11 +558,29 @@ static QINT QViewFinishLayoutRelation(QBaseView *view)
 			{
 				psrcview = pitem->psrcview;
 				pdstview = pitem->pdstview;
-				if(psrcview != NULL && pdstview != NULL && QViewHasLayoutFinished(pcurview, pitem->ndstattr))
+				if(psrcview != NULL && pdstview != NULL &&
+				   psrcview->mstlayout.hrelation != NULL && QViewHasLayoutFinished(psrcview, pitem->nsrcattr))
 				{
-					vpitem[ndepty] = hitem;
-					pchild = psrcview;
-					break;
+					// 判断是否已经处理过该控件的关联树，如已处理则跳过。
+					hprev = qlinkPrev(QLINK_BL_RELATION, hitem);
+					while(hprev)
+					{
+						pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hprev);
+						if(pitem != NULL)
+						{
+							if(pitem->psrcview == psrcview)
+							{
+								break;
+							}
+						}
+						hprev = qlinkPrev(QLINK_BL_RELATION, hprev);
+					}
+					if(hprev == NULL)
+					{
+						vpitem[ndepty] = hitem;
+						pchild = psrcview;
+						break;
+					}
 				}
 			}
 			hitem = qlinkNext(QLINK_BL_RELATION, hitem);
@@ -591,11 +607,29 @@ static QINT QViewFinishLayoutRelation(QBaseView *view)
 						{
 							psrcview = pitem->psrcview;
 							pdstview = pitem->pdstview;
-							if(psrcview != NULL && pdstview != NULL && QViewHasLayoutFinished(pdstview, pitem->ndstattr))
+							if(psrcview != NULL && pdstview != NULL &&
+							   psrcview->mstlayout.hrelation != NULL && QViewHasLayoutFinished(psrcview, pitem->nsrcattr))
 							{
-								vpitem[ndepty] = hitem;
-								pchild = psrcview;
-								break;
+								// 判断是否已经处理过该控件的关联树，如已处理则跳过。
+								hprev = qlinkPrev(QLINK_BL_RELATION, hitem);
+								while(hprev)
+								{
+									pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hprev);
+									if(pitem != NULL)
+									{
+										if(pitem->psrcview == psrcview)
+										{
+											break;
+										}
+									}
+									hprev = qlinkPrev(QLINK_BL_RELATION, hprev);
+								}
+								if(hprev == NULL)
+								{
+									vpitem[ndepty] = hitem;
+									pchild = psrcview;
+									break;
+								}
 							}
 						}
 						hitem = qlinkNext(QLINK_BL_RELATION, hitem);
@@ -914,9 +948,9 @@ static QINT QViewGetLayoutType(struct qmdl_layout_item items[])
 // 计算排版信息的最终取值。
 static QINT QViewGetLayoutPosition(QBaseView *view, QBaseView *parent, QINT type, struct qmdl_layout_item items[], QINT attr)
 {
-	QINT nattr, nposition;
 	struct qmdl_layout_item *pitem;
 	QBaseView *pdstview, *psrcview;
+	QINT nattr, nposition, nmpercent, nrpercent;
 	
 	if(items == NULL)
 	{
@@ -946,7 +980,8 @@ static QINT QViewGetLayoutPosition(QBaseView *view, QBaseView *parent, QINT type
 	{
 		// 没有依赖关系。
 		QViewSetLayoutFinished(psrcview, pitem->nsrcattr, 1);
-		return pitem->nremainder;
+		nrpercent = pitem->nflag & QLayoutFlagRPercent;
+		return pitem->nremainder/(nrpercent?100:1);
 	}
 	// 判断相对view的相应位置是否准备好。
 	if(!QViewHasLayoutFinished(pdstview, pitem->ndstattr))
@@ -987,8 +1022,9 @@ static QINT QViewGetLayoutPosition(QBaseView *view, QBaseView *parent, QINT type
 	}
 	// 计算不同父view下的相对位置。
 	nposition = QViewGetRealPosition(pitem, nposition);
+	nmpercent = pitem->nflag & QLayoutFlagMPercent;
 	
-	return nposition*pitem->nmultiplier+pitem->nremainder;
+	return nposition*pitem->nmultiplier/(nmpercent?100:1)+pitem->nremainder;
 }
 
 // 计算排版信息的空隙取值。
@@ -1230,19 +1266,25 @@ static QINT QViewGetBasePositionMargin(QBaseView *view, QBaseView *parent, QINT 
 		if(items[QLayoutAttrRight].nsrcattr != QLayoutNone)
 		{
 			rcposition.right = QViewGetLayoutPosition(view, parent, type, items, QLayoutRight);
-			if(nwidth != 0)
+			if(nwidth > 0)
 			{
 				// 宽度优先。
 				rcposition.right = rcposition.left+nwidth;
-				QViewSetLayoutFinished(view, QLayoutRight, 1);
+				if(QViewHasLayoutFinished(view, QLayoutLeft))
+				{
+					QViewSetLayoutFinished(view, QLayoutRight, 1);
+				}
 			}
 		}
 		else
 		{
-			if(nwidth != 0)
+			if(nwidth > 0)
 			{
 				rcposition.right = rcposition.left+nwidth;
-				QViewSetLayoutFinished(view, QLayoutRight, 1);
+				if(QViewHasLayoutFinished(view, QLayoutLeft))
+				{
+					QViewSetLayoutFinished(view, QLayoutRight, 1);
+				}
 			}
 			else
 			{
@@ -1255,10 +1297,18 @@ static QINT QViewGetBasePositionMargin(QBaseView *view, QBaseView *parent, QINT 
 		if(items[QLayoutAttrRight].nsrcattr != QLayoutNone)
 		{
 			rcposition.right = QViewGetLayoutPosition(view, parent, type, items, QLayoutRight);
-			if(nwidth != 0)
+			if(nwidth > 0)
 			{
-				rcposition.left = rcposition.right-nwidth;
-				QViewSetLayoutFinished(view, QLayoutLeft, 1);
+				if(QViewHasLayoutFinished(view, QLayoutRight))
+				{
+					rcposition.left = rcposition.right-nwidth;
+					QViewSetLayoutFinished(view, QLayoutLeft, 1);
+				}
+				else
+				{
+					rcposition.left = 0;
+					rcposition.right = nwidth;
+				}
 			}
 			else
 			{
@@ -1285,19 +1335,25 @@ static QINT QViewGetBasePositionMargin(QBaseView *view, QBaseView *parent, QINT 
 		if(items[QLayoutAttrBottom].nsrcattr != QLayoutNone)
 		{
 			rcposition.bottom = QViewGetLayoutPosition(view, parent, type, items, QLayoutBottom);
-			if(nheight != 0)
+			if(nheight > 0)
 			{
 				// 高度优先。
 				rcposition.bottom = rcposition.top+nheight;
-				QViewSetLayoutFinished(view, QLayoutBottom, 1);
+				if(QViewHasLayoutFinished(view, QLayoutTop))
+				{
+					QViewSetLayoutFinished(view, QLayoutBottom, 1);
+				}
 			}
 		}
 		else
 		{
-			if(nheight != 0)
+			if(nheight > 0)
 			{
 				rcposition.bottom = rcposition.top+nheight;
-				QViewSetLayoutFinished(view, QLayoutBottom, 1);
+				if(QViewHasLayoutFinished(view, QLayoutTop))
+				{
+					QViewSetLayoutFinished(view, QLayoutBottom, 1);
+				}
 			}
 			else
 			{
@@ -1310,10 +1366,18 @@ static QINT QViewGetBasePositionMargin(QBaseView *view, QBaseView *parent, QINT 
 		if(items[QLayoutAttrBottom].nsrcattr != QLayoutNone)
 		{
 			rcposition.bottom = QViewGetLayoutPosition(view, parent, type, items, QLayoutBottom);
-			if(nheight != 0)
+			if(nheight > 0)
 			{
-				rcposition.top = rcposition.bottom-nheight;
-				QViewSetLayoutFinished(view, QLayoutTop, 1);
+				if(QViewHasLayoutFinished(view, QLayoutBottom))
+				{
+					rcposition.top = rcposition.bottom-nheight;
+					QViewSetLayoutFinished(view, QLayoutTop, 1);
+				}
+				else
+				{
+					rcposition.top = 0;
+					rcposition.bottom = nheight;
+				}
 			}
 			else
 			{
@@ -2803,6 +2867,35 @@ static QINT qmdl_relation_position_prev_cb(QHDL hdl, QPNT name, QINT code, QPNT 
 	return QSCN_OK;
 }
 
+static QINT qmdl_invalidate_position_prev_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QHDL hitem;
+	QINT nflag;
+	QBaseView *pview;
+	struct qmdl_layout_item *pitem;
+	
+	pview = dynamic_cast<QBaseView *>((QMDL)hdl);
+	if(pview == NULL)
+	{
+		return QSCN_OK;
+	}
+	nflag = QViewGetLayoutFlag(pview, QLayoutAttrFlag);
+	nflag &= ~QLayoutFlagSelf;
+	QViewSetLayoutFlag(pview, QLayoutAttrFlag, nflag);
+	hitem = qlinkHead(QLINK_BL_RELATION, pview->mstlayout.hrelation);
+	while(hitem)
+	{
+		pitem = (struct qmdl_layout_item *)qlinkData(QLINK_BL_RELATION, hitem);
+		if(pitem != NULL)
+		{
+			pitem->nflag &= ~QLayoutFlagFinished;
+		}
+		hitem = qlinkNext(QLINK_BL_RELATION, hitem);
+	}
+	
+	return QSCN_OK;
+}
+
 void QBaseView::LayoutPosition()
 {
 	this->ScanModulex(this, qmdl_layout_position_prev_cb, qmdl_layout_position_post_cb, NULL, 0);
@@ -2816,20 +2909,5 @@ void QBaseView::UpdatePosition()
 
 void QBaseView::InvalidatePosition()
 {
-	QINT nflag;
-	QBaseView *pview;
-	QMDL pchildmdl;
-	
-	pchildmdl = this;
-	while(pchildmdl)
-	{
-		pview = dynamic_cast<QBaseView *>(pchildmdl);
-		if(pview != NULL)
-		{
-			nflag = QViewGetLayoutFlag(pview, QLayoutAttrFlag);
-			nflag &= ~QLayoutFlagSelf;
-			QViewSetLayoutFlag(pview, QLayoutAttrFlag, nflag);
-		}
-		pchildmdl = pchildmdl->NextModule();
-	}
+	this->ScanModulex(this, qmdl_invalidate_position_prev_cb, NULL, NULL, 0);
 }

@@ -50,30 +50,41 @@ QUISlider::~QUISlider()
 
 QINT QUISlider::MakeModuleBegin(QMDL env, QMDL parent, QXML mxml, QSTR url)
 {
-	QSTR pid;
-	QINT ntag;
-	
-	if(midview != nil)
-	{
-		return QSCN_OK;
-	}
-	pid = (QSTR)qxmlGetId(mxml);
-	if(pid != NULL && qstrcmp(QSTR_CMP_ICASE, (QPNT)pid, (QPNT)qmdl_name(QUISlider), 0))
-	{
-		ntag = 0;
-		midview = FindViewByTag(env, parent, NULL, mxml, url, &ntag);
-		if(midview == nil)
-		{
-			midview = [[QIOSUISlider alloc] initWithModule:this];
-			((QIOSUISlider *)midview).module = this;
-			if(ntag != 0)
-			{
-				((UIView *)midview).tag = ntag;
-			}
-		}
-	}
-	
 	return QSCN_OK;
+}
+
+static QINT QUISliderOnMake(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QUILabel *pslider;
+	
+	pslider = (QUILabel *)hdl;
+	if(pslider == NULL)
+	{
+		return QNO_OK;
+	}
+	if(pslider->midview == nil)
+	{
+		pslider->midview = [[QIOSUISlider alloc] initWithModule:pslider];
+	}
+	
+	return QNO_OK;
+}
+
+QINT QUISliderSelfCb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QUILabel *pslider;
+	
+	pslider = (QUILabel *)hdl;
+	if(pslider == NULL)
+	{
+		return QNO_OK;
+	}
+	if(code == QCD_MAKE)
+	{
+		QUISliderOnMake(hdl, name, code, params, count);
+	}
+	
+	return QNO_OK;
 }
 
 #endif

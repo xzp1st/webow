@@ -4,6 +4,41 @@
 #include "qmdl_base.h"
 
 
+struct qmdl_init_item
+{
+	QPNT pname;
+	QPNT ptype;
+	QPNT pvalue;
+	QINT nlen;
+};
+
+
+static QINT qmdl_init_item_free_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	struct qmdl_init_item *pitem;
+	
+	pitem = (struct qmdl_init_item *)qlinkData(QLINK_NONE, hdl);
+	if(pitem == NULL)
+	{
+		return QSCN_OK;
+	}
+	if(pitem->pname != NULL)
+	{
+		qmfree(pitem->pname);
+		pitem->pname = NULL;
+	}
+	if(pitem->ptype == qstr || pitem->ptype == NULL)
+	{
+		if(pitem->pvalue != NULL)
+		{
+			qmfree(pitem->pvalue);
+			pitem->pvalue = NULL;
+		}
+	}
+	
+	return QSCN_OK;
+}
+
 static QINT qmdl_attr_item_free_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
 	struct qmdl_attr_item *pitem;
@@ -131,7 +166,7 @@ DUP_ATTR:
 			pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
 			if(pitem != NULL)
 			{
-				if(pitem->nflag == nflag && qstrcmp(QSTR_CMP_ICASE, pitem->pname, pid, 0))
+				if(pitem->nflag == nflag && qstrcmp(QSTR_ICS, pitem->pname, pid, 0))
 				{
 					break;
 				}
@@ -255,7 +290,7 @@ QHDL QModule::SetAttrItem(QSTR name, QINT flag)
 			pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
 			if(pitem != NULL)
 			{
-				if(qstrcmp(QSTR_CMP_ICASE, pitem->pname, phead, nlen))
+				if(qstrcmp(QSTR_ICS, pitem->pname, phead, nlen))
 				{
 					if(ptail != NULL)
 					{
@@ -353,7 +388,7 @@ QHDL QModule::GetAttrItem(QSTR name, QINT flag)
 				pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
 				if(pitem != NULL)
 				{
-					if(qstrcmp(QSTR_CMP_ICASE, pitem->pname, phead, nlen))
+					if(qstrcmp(QSTR_ICS, pitem->pname, phead, nlen))
 					{
 						if(ptail != NULL)
 						{
@@ -404,7 +439,7 @@ QHDL QModule::GetAttrItem(QSTR name, QINT flag)
 				nlen = (QINT)(ptail-phead);
 			}
 			pid = (QSTR)qxmlGetId(pnode->pxmlval);
-			if(pid != NULL && qstrcmp(QSTR_CMP_ICASE, pid, phead, nlen))
+			if(pid != NULL && qstrcmp(QSTR_ICS, pid, phead, nlen))
 			{
 				if(ptail == NULL)
 				{
@@ -440,7 +475,7 @@ QHDL QModule::GetAttrItem(QSTR name, QINT flag)
 				while(pchild)
 				{
 					pid = (QSTR)qxmlGetId(pchild);
-					if(pid != NULL && qstrcmp(QSTR_CMP_ICASE, pid, phead, nlen))
+					if(pid != NULL && qstrcmp(QSTR_ICS, pid, phead, nlen))
 					{
 						if(ptail != NULL)
 						{
@@ -515,125 +550,118 @@ static QINT qxml_set_attr_scan_prev_cb(QHDL hdl, QPNT name, QINT code, QPNT para
 	return QSCN_OK;
 }
 
-void QModule::SetAttrx(QMDL env, QSTR name, QPNT params[], QINT count)
+QINT QModule::SetAttr(QMDL env, QSTR name, QPNT type, QPNT value, QINT len)
 {
 	QXML pmxml;
-	QHDL hnode, hitem;
-	struct qmdl_attr_item *pnode, *pitem;
+	QHDL hitem;
+	QPCB pcbval;
+	QPNT vpprms[8];
+	QCHR vbuff[QSTR_BUFF_SIZE];
+	QINT nlen, nsize, ncount;
+	QPNT pval, psrctype, pdsttype;
+	struct qmdl_attr_item *pitem;
 	
 	if(name == NULL)
 	{
-		// 必须执行的初始化，以最终的URL和OBJ信息。
-		hnode = qlinkTail(QLINK_ATTR, mhAttrLink);
-		while(hnode)
-		{
-			pnode = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hnode);
-			if(pnode == NULL)
-			{
-				break;
-			}
-			hitem = qlinkHead(QLINK_ATTR, pnode->hsublink);
-			while(hitem)
-			{
-				pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
-				if(pitem != NULL)
-				{
-					if(pitem->pname == NULL && pitem->nflag == QMDL_ATTRIBUTE)
-					{
-						if(pitem->pcbval != NULL)
-						{
-							pitem->pcbval((QHDL )this, mpPath, QCD_CALL, params, count);
-						}
-					}
-				}
-				hitem = qlinkNext(QLINK_ATTR, hitem);
-			}
-			if(pnode->pxmlval != NULL)
-			{
-				QINT ncount;
-				QPNT vpprms[8];
-				
-				ncount = 0;
-				vpprms[ncount++] = (QPNT )this;
-				vpprms[ncount++] = (QPNT )QMDL_ATTRIBUTE;
-				vpprms[ncount++] = (QPNT )params;
-				vpprms[ncount++] = (QPNT )count;
-				qxmlScanx(pnode->pxmlval, qxml_set_attr_scan_prev_cb, NULL, vpprms, ncount);
-			}
-			hnode = qlinkPrev(QLINK_ATTR, hnode);
-		}
+		return QNO_FAIL;
+	}
+	hitem = GetAttrItem(name, QMDL_ATTRIBUTE);
+	if(hitem == NULL)
+	{
+		hitem = (QHDL)GetAttrItem((QSTR)"attrcb", QMDL_ATTRIBUTE);
+	}
+	if(hitem == NULL)
+	{
+		return QNO_FAIL;
+	}
+	pdsttype = (QPNT)type;
+	psrctype = (QPNT)type;
+	pval = (QPNT)value;
+	nlen = (QINT)len;
+	pcbval = NULL;
+	pmxml = (QXML)qmcheck(hitem, QLCN_HXML);
+	if(pmxml != NULL)
+	{
+		pdsttype = qxmlGetTag(pmxml);
+		pcbval = qxmlGetValcb(pmxml);
 	}
 	else
 	{
-		hitem = GetAttrItem(name, QMDL_ATTRIBUTE);
-		if(hitem == NULL)
+		pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
+		if(pitem != NULL)
 		{
-            hitem = (QHDL)GetAttrItem((QSTR)"attrcb", QMDL_ATTRIBUTE);
+			pdsttype = pitem->ptype;
+			pcbval = pitem->pcbval;
 		}
-        if(hitem != NULL)
-        {
-            QPCB pcbval;
-            QPNT vpprms[8];
-            QCHR vbuff[QSTR_BUFF_SIZE];
-            QINT nlen, nsize, ncount;
-            QPNT pval, psrctype, pdsttype;
-
-            pdsttype = NULL;
-            psrctype = params[1];
-			pval = NULL;
-            pcbval = NULL;
-		    pmxml = (QXML)qmcheck(hitem, QLCN_HXML);
-		    if(pmxml != NULL)
-		    {
-                pdsttype = qxmlGetTag(pmxml);
-                pval = (QPNT)qxmlGetValp(pmxml);
-			    pcbval = qxmlGetValcb(pmxml);
-		    }
-		    else
-		    {
-			    pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
-			    if(pitem != NULL)
-			    {
-                    pdsttype = pitem->ptype;
-                    pval = (QPNT)pitem->pval;
-                    pcbval = pitem->pcbval;
-			    }
-		    }
-            if(pcbval != NULL)
-            {
-                nlen = 0;
-                if(psrctype == qstr || psrctype == NULL)
-                {
-                    nlen = qmdlCopy(this, NULL, NULL, 0, this->mpPath, vbuff, sizeof(vbuff), pval, NULL);
-                    pval = vbuff;
-                }
-                nsize = sizeof(vbuff);
-                pval = qprmconvert(pdsttype, vbuff, &nsize, psrctype, pval, nlen);
-                nlen = nsize;
-                ncount = 0;
-                vpprms[ncount++] = (QPNT )params[0];
-                vpprms[ncount++] = (QPNT )params[1];
-                vpprms[ncount++] = (QPNT )pval;
-                vpprms[ncount++] = (QPNT )nlen;
-                pcbval((QHDL )this, name, QCD_CALL, params, count);
-            }
-        }
 	}
+	if(pcbval == NULL)
+	{
+		return QNO_FAIL;
+	}
+	nlen = 0;
+	if(psrctype == qstr || psrctype == NULL)
+	{
+		nlen = qmdlCopy(this, NULL, NULL, 0, this->mpPath, vbuff, sizeof(vbuff), pval, NULL);
+		pval = vbuff;
+	}
+	nsize = sizeof(vbuff);
+	pval = qprmconvert(pdsttype, vbuff, &nsize, psrctype, pval, nlen);
+	nlen = nsize;
+	ncount = 0;
+	vpprms[ncount++] = (QPNT)env;
+	vpprms[ncount++] = (QPNT)pdsttype;
+	vpprms[ncount++] = (QPNT)pval;
+	vpprms[ncount++] = (QPNT)nlen;
+
+	return pcbval((QHDL )this, name, QCD_SET, vpprms, ncount);
 }
 
-void QModule::SetAttr(QMDL env, QSTR name, QINT count, ...)
+QINT QModule::GetAttr(QMDL env, QSTR name, QPNT *type, QPNT *value, QINT *len)
 {
-	QPNT *ppparams;
-	QCHR vbuff[QPRM_BUFF_SIZE] = {0};
-	va_list marker;
+	QXML pmxml;
+	QHDL hitem;
+	QPCB pcbval;
+	QINT ncount;
+	QPNT vpprms[8];
+	struct qmdl_attr_item *pitem;
 	
-	va_start( marker, count );
-	ppparams = (QPNT *)qprmmakev(NULL, vbuff, sizeof(vbuff), NULL, NULL, marker, &count);
-	va_end( marker );
+	if(name == NULL)
+	{
+		return QNO_FAIL;
+	}
+	hitem = GetAttrItem(name, QMDL_ATTRIBUTE);
+	if(hitem == NULL)
+	{
+		hitem = (QHDL)GetAttrItem((QSTR)"attrcb", QMDL_ATTRIBUTE);
+	}
+	if(hitem == NULL)
+	{
+		return QNO_FAIL;
+	}
+	pmxml = (QXML)qmcheck(hitem, QLCN_HXML);
+	if(pmxml != NULL)
+	{
+		pcbval = qxmlGetValcb(pmxml);
+	}
+	else
+	{
+		pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
+		if(pitem != NULL)
+		{
+			pcbval = pitem->pcbval;
+		}
+	}
+	if(pcbval == NULL)
+	{
+		return QNO_FAIL;
+	}
+	ncount = 0;
+	vpprms[ncount++] = (QPNT)env;
+	vpprms[ncount++] = (QPNT)type;
+	vpprms[ncount++] = (QPNT)value;
+	vpprms[ncount++] = (QPNT)len;
 	
-	SetAttrx(env, name, ppparams, count);
-	
-	qprmfree(ppparams);
+	return pcbval((QHDL )this, name, QCD_GET, vpprms, ncount);
 }
 
 void QModule::ClrAttrLink()
@@ -644,16 +672,155 @@ void QModule::ClrAttrLink()
 		mhAttrLink = NULL;
 	}
 }
+	
+void QModule::ClrInitLink()
+{
+	if(mhInitLink != NULL)
+	{
+		qlinkFreeLinkx(QLINK_NONE, mhInitLink, qmdl_init_item_free_cb, NULL, 0);
+		mhInitLink = NULL;
+	}
+}
+
+void QModule::InitAttrs()
+{
+	QHDL hitem;
+	struct qmdl_init_item *pitem;
+	
+	hitem = qlinkHead(QLINK_NONE, mhInitLink);
+	while(hitem)
+	{
+		pitem = (struct qmdl_init_item *)qlinkData(QLINK_NONE, hitem);
+		if(pitem != NULL && pitem->pname != NULL)
+		{
+			SetAttr(main, (QSTR)pitem->pname, pitem->ptype, pitem->pvalue, pitem->nlen);
+		}
+		hitem = qlinkNext(QLINK_NONE, hitem);
+	}
+	if(mhInitLink != NULL)
+	{
+		qlinkFreeLinkx(QLINK_NONE, mhInitLink, qmdl_init_item_free_cb, NULL, 0);
+		mhInitLink = NULL;
+	}
+}
+
+QINT QModule::SetInitItem(QPNT name, QPNT type, QPNT value, QINT len)
+{
+	QHDL hitem;
+	struct qmdl_init_item *pitem;
+	
+	if(name == NULL)
+	{
+		return QNO_FAIL;
+	}
+	hitem = qlinkHead(QLINK_NONE, mhInitLink);
+	while(hitem)
+	{
+		pitem = (struct qmdl_init_item *)qlinkData(QLINK_NONE, hitem);
+		if(pitem != NULL)
+		{
+			if(pitem->pname != NULL && qstrcmp(QSTR_ICS, pitem->pname, name, 0))
+			{
+				break;
+			}
+		}
+		hitem = qlinkNext(QLINK_NONE, hitem);
+	}
+	if(hitem == NULL)
+	{
+		hitem = qlinkMake(QLINK_NONE, NULL, NULL, sizeof(struct qmdl_init_item));
+		if(hitem == NULL)
+		{
+			return QNO_FAIL;
+		}
+		mhInitLink = qlinkInsertNext(QLINK_NONE, mhInitLink, NULL, hitem);
+	}
+	pitem = (struct qmdl_init_item*)qlinkData(QLINK_NONE, hitem);
+	if(pitem == NULL)
+	{
+		return QNO_FAIL;
+	}
+	if(pitem->pname == NULL)
+	{
+		pitem->pname = qstrdup(NULL, name);
+	}
+	if(pitem->ptype == qstr || pitem->ptype == NULL)
+	{
+		if(pitem->pvalue != NULL)
+		{
+			qmfree(pitem->pvalue);
+		}
+	}
+	pitem->ptype = type;
+	if(type == qstr || type == NULL)
+	{
+		pitem->pvalue = qstrdup(NULL, value);
+	}
+	else
+	{
+		pitem->pvalue = value;
+	}
+	pitem->nlen = len;
+	
+	return QNO_OK;
+}
+
+QINT QModule::GetInitItem(QPNT name, QPNT *type, QPNT *value, QINT *len)
+{
+	QHDL hitem;
+	struct qmdl_init_item *pitem;
+	
+	if(name == NULL)
+	{
+		return QNO_FAIL;
+	}
+	hitem = qlinkHead(QLINK_NONE, mhInitLink);
+	while(hitem)
+	{
+		pitem = (struct qmdl_init_item *)qlinkData(QLINK_NONE, hitem);
+		if(pitem != NULL)
+		{
+			if(pitem->pname != NULL && qstrcmp(QSTR_ICS, pitem->pname, name, 0))
+			{
+				break;
+			}
+		}
+		hitem = qlinkNext(QLINK_NONE, hitem);
+	}
+	if(hitem == NULL)
+	{
+		return QNO_FAIL;
+	}
+	pitem = (struct qmdl_init_item *)qlinkData(QLINK_NONE, hitem);
+	if(pitem == NULL)
+	{
+		return QNO_FAIL;
+	}
+	if(type != NULL)
+	{
+		*type = pitem->ptype;
+	}
+	if(value != NULL)
+	{
+		*value = pitem->pvalue;
+	}
+	if(len != NULL)
+	{
+		*len = pitem->nlen;
+	}
+	
+	return QNO_OK;
+}
 
 static QINT qurl_init_scan_prev_cb(QPNT url, QPNT name, QPNT value, QINT size, QPNT params[], QINT count)
 {
-	QPNT vpprms[8];
+	QMDL penv;
+	QINT nsize, nlen;
 	QPNT purl, pbuff;
-	QMDL penv, pmodule;
-	QINT nsize, ncount, nlen;
+	QModule *pmodule;
 	
 	penv = (QMDL)params[0];
-	pmodule = (QMDL)params[1];
+	pmodule = (QModule*)params[1];
 	purl = (QPNT)params[2];
 	pbuff = (QPNT)params[3];
 	nsize = (QINT)params[4];
@@ -662,12 +829,7 @@ static QINT qurl_init_scan_prev_cb(QPNT url, QPNT name, QPNT value, QINT size, Q
 		return QSCN_END;
 	}
 	nlen = qmdlCopy(pmodule, NULL, NULL, 0, purl, pbuff, nsize, value, &size);
-	ncount = 0;
-	vpprms[ncount++] = (QPNT )penv;
-    vpprms[ncount++] = (QPNT )qstr;
-	vpprms[ncount++] = (QPNT )pbuff;
-	vpprms[ncount++] = (QPNT )nlen;
-	((QModule *)pmodule)->SetAttrx(penv, (QSTR )name, vpprms, ncount);
+	pmodule->SetInitItem(name, (QPNT)qstr, pbuff, nlen);
 	
 	return QSCN_OK;
 }
@@ -675,11 +837,11 @@ static QINT qurl_init_scan_prev_cb(QPNT url, QPNT name, QPNT value, QINT size, Q
 QINT qmdlInit(QMDL env, QMDL module, QXML mxml, QSTR url)
 {
 	QSTR pid;
+	QXML pattr;
 	QHDL hitem;
 	QModule *pmodule;
-	QXML pattr, pmxml;
-	QINT ncount, nlen, nsize;
-	QPNT psrctype, pdsttype, pval, vpprms[8];
+	QINT ncount, nlen;
+	QPNT psrctype, pval, vpprms[8];
 	QCHR vbuff[QSTR_BUFF_SIZE];
 	struct qmdl_attr_item *pitem;
 	
@@ -692,13 +854,6 @@ QINT qmdlInit(QMDL env, QMDL module, QXML mxml, QSTR url)
 	{
 		return QNO_FAIL;
 	}
-	// 必须执行的初始化。
-	ncount = 0;
-	vpprms[ncount++] = (QPNT )env;
-    vpprms[ncount++] = (QPNT )NULL;
-	vpprms[ncount++] = (QPNT )mxml;
-	vpprms[ncount++] = (QPNT )url;
-	pmodule->SetAttrx(env, NULL, vpprms, ncount);
 	if(mxml != NULL)
 	{
 		// xml属性初始化。
@@ -724,12 +879,6 @@ QINT qmdlInit(QMDL env, QMDL module, QXML mxml, QSTR url)
 			}
 			else
 			{
-				pdsttype = NULL;
-				pmxml = (QXML)qmcheck(hitem, QLCN_HXML);
-				if(pmxml != NULL)
-				{
-					pdsttype = qxmlGetTag(pmxml);
-				}
 				pval = (QPNT)qxmlGetValp(pattr);
 				nlen = 0;
 				if(psrctype == qstr || psrctype == NULL)
@@ -737,36 +886,7 @@ QINT qmdlInit(QMDL env, QMDL module, QXML mxml, QSTR url)
 					nlen = qmdlCopy(module, NULL, NULL, 0, url, vbuff, sizeof(vbuff), pval, NULL);
 					pval = vbuff;
 				}
-				nsize = sizeof(vbuff);
-				pval = qprmconvert(pdsttype, vbuff, &nsize, psrctype, pval, nlen);
-				nlen = nsize;
-				ncount = 0;
-				vpprms[ncount++] = (QPNT )env;
-                vpprms[ncount++] = (QPNT )psrctype;
-				vpprms[ncount++] = (QPNT )pval;
-				vpprms[ncount++] = (QPNT )nlen;
-				if(pmxml != NULL)
-				{
-					QPCB pcbval;
-					
-					pcbval = qxmlGetValcb(pmxml);
-					if(pcbval != NULL)
-					{
-						pcbval((QHDL)pmodule, pid, QCD_SET, vpprms, ncount);
-					}
-				}
-				else
-				{
-					pitem = (struct qmdl_attr_item *)qlinkData(QLINK_ATTR, hitem);
-					if(pitem == NULL)
-					{
-						if(pitem->pcbval != NULL)
-						{
-							pitem->pcbval((QHDL)pmodule, pid, QCD_SET, vpprms, ncount);
-						}
-					}
-				}
-				
+				pmodule->SetInitItem(pid, (QPNT)psrctype, pval, nlen);
 			}
 			pattr = (QXML)qxmlAttrGetNext(pattr, 0);
 		}
@@ -800,7 +920,7 @@ static QINT qmdl_find_module_by_name_cb(QHDL hdl, QPNT name, QINT code, QPNT par
 	psrcname = (QPNT)params[0];
 	nnamelen = (QINT)params[1];
 	pdstname = pmodule->GetName();
-	if(!qstrcmp(QSTR_CMP_ICASE, psrcname, pdstname, nnamelen))
+	if(!qstrcmp(QSTR_ICS, psrcname, pdstname, nnamelen))
 	{
 		return QSCN_OK;
 	}
@@ -968,7 +1088,7 @@ static QMDL qmdlMakeByMxml(QMDL env, QMDL parent, QMDL module, QXML mxml, QSTR u
 			while(pattrmxml)
 			{
 				pid = qxmlGetId(pattrmxml);
-				if(pid != NULL && qstrcmp(QSTR_CMP_ICASE, (QPNT)pid, (QPNT)"css", 0))
+				if(pid != NULL && qstrcmp(QSTR_ICS, (QPNT)pid, (QPNT)"css", 0))
 				{
 					pval = qxmlGetValp(pattrmxml);
 					if(pval != NULL)
@@ -1029,7 +1149,7 @@ static QMDL qmdlMakeByMxml(QMDL env, QMDL parent, QMDL module, QXML mxml, QSTR u
 							}
 						}
 					}//pval != NULL
-				}//qstrcmp(QSTR_CMP_ICASE, (QPNT)pid, (QPNT)"css", 0)
+				}//qstrcmp(QSTR_ICS, (QPNT)pid, (QPNT)"css", 0)
 				pattrmxml = (QXML)qxmlAttrGetNext(pattrmxml, QMDL_ATTR);
 			}
 			if(pcssmdl != NULL)
@@ -1376,7 +1496,25 @@ static QMDL qmdlMakeByUrl(QMDL env, QMDL parent, QMDL module, QXML mxml, QSTR ur
 	return pdstmdl;
 }
 
-QMDL qmdlMake(QMDL env, QMDL parent, QPMK cls, QMDL module, QXML mxml, QSTR url)
+static QINT qmdl_dispatch_event_scan_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QModule *pmodule = (QModule *)hdl;
+	if(pmodule == NULL)
+	{
+		return QSCN_OK;
+	}
+	QINT nresult = pmodule->ModuleCb(NULL, (QINT)params[0], &params[1], count-1);
+	if(nresult == QSCN_FAIL || nresult == QSCN_ERR || nresult == QSCN_END)
+	{
+		return nresult;
+	}
+	pmodule->DispatchEventx(NULL, (QINT)params[0], &params[1], count-1);
+	pmodule->InitAttrs();
+	
+	return QSCN_OK;
+}
+
+QMDL qmdlMakei(QMDL env, QMDL parent, QPMK cls, QMDL module, QXML mxml, QSTR url)
 {
 	// FIXME：函数内buff可以复用，避免栈过大膨胀。
 	QMDL pdst;
@@ -1406,6 +1544,51 @@ QMDL qmdlMake(QMDL env, QMDL parent, QPMK cls, QMDL module, QXML mxml, QSTR url)
 			((QModule *)pdst)->main = env->MainModule();
 		}
 	}
+	
+	return pdst;
+}
+
+QMDL qmdlMake(QMDL env, QMDL parent, QPMK cls, QMDL module, QXML mxml, QSTR url)
+{
+	// FIXME：函数内buff可以复用，避免栈过大膨胀。
+	QMDL pdst;
+	QINT ncount;
+	QPNT vpprms[8];
+	
+	pdst = NULL;
+	if(cls != NULL)
+	{
+		pdst = cls(env, parent, NULL);
+	}
+	else
+	{
+		pdst = module;
+	}
+	if(mxml != NULL)
+	{
+		pdst = qmdlMakeByMxml(env, parent, pdst, mxml, url);
+	}
+	else if(url != NULL)
+	{
+		pdst = qmdlMakeByUrl(env, parent, pdst, mxml, url);
+	}
+	if(pdst == NULL)
+	{
+		pdst = new QModule();
+		if(env != NULL)
+		{
+			((QModule *)pdst)->main = env->MainModule();
+		}
+	}
+	if(pdst == NULL)
+	{
+		return NULL;
+	}
+	// 广播模块创建消息。
+	ncount = 0;
+	vpprms[ncount++] = (QPNT)QCD_MAKE;
+	vpprms[ncount++] = (QPNT)pdst;
+	pdst->ScanModulex(pdst, qmdl_dispatch_event_scan_cb, NULL, vpprms, ncount);
 	
 	return pdst;
 }

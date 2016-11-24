@@ -273,7 +273,7 @@ QINT QUIViewInitHidden(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count
 	}
 	pval = (QSTR )params[1];
 	nlen = (QINT )params[2];
-	if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pval, (QPNT)"yes", nlen) || qstrcmp(QSTR_CMP_ICASE, (QPNT)pval, (QPNT)"true", nlen))
+	if(qstrcmp(QSTR_ICS, (QPNT)pval, (QPNT)"yes", nlen) || qstrcmp(QSTR_ICS, (QPNT)pval, (QPNT)"true", nlen))
 	{
 		pthis->mpframe->put_hidden(TRUE);
 	}
@@ -302,7 +302,7 @@ QINT QUIViewInitEnable(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count
 	}
 	pval = (QSTR )params[1];
 	nlen = (QINT )params[2];
-	if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pval, (QPNT)"yes", nlen) || qstrcmp(QSTR_CMP_ICASE, (QPNT)pval, (QPNT)"true", nlen))
+	if(qstrcmp(QSTR_ICS, (QPNT)pval, (QPNT)"yes", nlen) || qstrcmp(QSTR_ICS, (QPNT)pval, (QPNT)"true", nlen))
 	{
 		pthis->mpframe->put_enable(TRUE);
 	}
@@ -368,7 +368,7 @@ QINT QUIViewInitOpaque(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count
 	{
 		pthis->mpframe->put_opaque((BYTE)nval);
 	}
-	else if(qstrcmp(QSTR_CMP_ICASE, pval, "TRUE", nlen) || qstrcmp(QSTR_CMP_ICASE, pval, "YES", nlen))
+	else if(qstrcmp(QSTR_ICS, pval, "TRUE", nlen) || qstrcmp(QSTR_ICS, pval, "YES", nlen))
 	{
 		pthis->mpframe->put_opaque(TRUE);
 	}
@@ -403,7 +403,7 @@ QINT QUIViewInitTransparent(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT 
 	{
 		pthis->mpframe->put_transparent((BOOL)nval);
 	}
-	else if(qstrcmp(QSTR_CMP_ICASE, pval, "TRUE", nlen) || qstrcmp(QSTR_CMP_ICASE, pval, "YES", nlen))
+	else if(qstrcmp(QSTR_ICS, pval, "TRUE", nlen) || qstrcmp(QSTR_ICS, pval, "YES", nlen))
 	{
 		pthis->mpframe->put_transparent(TRUE);
 	}
@@ -718,42 +718,42 @@ static QINT qmdlUIViewInitPosition(QMDL module, QINT flag, QSTR str, QINT len)
 	if(*pchar == '.')
 	{
 		nlen = 0;
-		if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"width", 5))
+		if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"width", 5))
 		{
 			nattrflag = NSLayoutAttributeWidth;
 			nlen = 5;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"height", 6))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"height", 6))
 		{
 			nattrflag = NSLayoutAttributeHeight;
 			nlen = 6;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"left", 4))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"left", 4))
 		{
 			nattrflag = NSLayoutAttributeLeft;
 			nlen = 4;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"top", 3))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"top", 3))
 		{
 			nattrflag = NSLayoutAttributeTop;
 			nlen = 3;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"right", 5))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"right", 5))
 		{
 			nattrflag = NSLayoutAttributeRight;
 			nlen = 5;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"bottom", 6))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"bottom", 6))
 		{
 			nattrflag = NSLayoutAttributeBottom;
 			nlen = 6;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"vcenter", 7))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"vcenter", 7))
 		{
 			nattrflag = NSLayoutAttributeVCenter;
 			nlen = 7;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"hcenter", 7))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"hcenter", 7))
 		{
 			nattrflag = NSLayoutAttributeHCenter;
 			nlen = 7;

@@ -32,17 +32,18 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 	QSTR pword;
 	QMDL pmodule;
 	QFLT fmultiplier;
-	QINT nresult, npos, nlen, nflag, ndstattr, nminus, nremainder;
+	QINT nresult, npos, nlen, nflag, ndstattr, nhasattr, nminus, nremainder;
 	QBaseView *psrcview, *pdstview, *pparentview;
 	
 	nresult = QNO_FAIL;
 	npos = 0;
 	pdstview = NULL;
 	ndstattr = attr;
+	nhasattr = 0;
 	fmultiplier = 1;
 	nremainder = 0;
 	// 获取第一个词语。
-	nflag = QSTR_MATCH_UNI|QSTR_MATCH_URL;
+	nflag = QSTR_UNI|QSTR_URL;
 	pword = NULL;
 	nlen = 0;
 	npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -66,34 +67,34 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 		}
 		pmodule = pmodule->ParentModule();
 	}
-	if(nflag & QSTR_MATCH_NUM)
+	if(nflag & QSTR_NUM)
 	{
 		// 数值。
 		nremainder = qstrint(0, pword, &nlen);
 		// 获取下一个词语。
-		nflag = QSTR_MATCH_UNI;
+		nflag = QSTR_UNI;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
 	}
-	else if(nflag & QSTR_MATCH_WORD)
+	else if(nflag & QSTR_WORD)
 	{
 		// 模块名称。
 		pmodule = psrcview->FindModule(NULL, 0, (QSTR)pword, nlen);
 		pdstview = dynamic_cast<QBaseView *>(pmodule);
 		// 获取下一个词语。
-		nflag = QSTR_MATCH_UNI;
+		nflag = QSTR_UNI;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
 	}
-	else if(nflag & QSTR_MATCH_URL)
+	else if(nflag & QSTR_URL)
 	{
 		// 模块路径。
 		pmodule = psrcview->FindModule((QSTR)pword, nlen, NULL, 0);
 		pdstview = dynamic_cast<QBaseView *>(pmodule);
 		// 获取下一个词语。
-		nflag = QSTR_MATCH_UNI;
+		nflag = QSTR_UNI;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -104,7 +105,7 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 	}
 	if(*pword == '.')
 	{
-		nflag = QSTR_MATCH_UNI;
+		nflag = QSTR_UNI;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -112,44 +113,49 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 		{
 			goto LAYOUT_FINISH;
 		}
-		if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"width", nlen))
+		nhasattr = 1;
+		if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"width", nlen))
 		{
 			ndstattr = QLayoutWidth;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"height", nlen))
+		else if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"height", nlen))
 		{
 			ndstattr = QLayoutHeight;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"left", nlen))
+		else if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"left", nlen))
 		{
 			ndstattr = QLayoutLeft;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"top", nlen))
+		else if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"top", nlen))
 		{
 			ndstattr = QLayoutTop;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"right", nlen))
+		else if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"right", nlen))
 		{
 			ndstattr = QLayoutRight;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"bottom", nlen))
+		else if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"bottom", nlen))
 		{
 			ndstattr = QLayoutBottom;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"vcenter", nlen))
+		else if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"vcenter", nlen))
 		{
 			ndstattr = QLayoutVCenter;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pword, (QPNT)"hcenter", nlen))
+		else if(qstrcmp(QSTR_ICS, (QPNT)pword, (QPNT)"hcenter", nlen))
 		{
 			ndstattr = QLayoutHCenter;
+		}
+		else
+		{
+			nhasattr = 0;
 		}
 		if(pdstview == NULL)
 		{
 			// name=".attr*X%+Y"
 			pdstview = pparentview;
 		}
-		nflag = QSTR_MATCH_UNI;
+		nflag = QSTR_UNI;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -161,7 +167,26 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 	if(*pword == '%')
 	{
 		ndstattr |= QLayoutMPercent;
-		nflag = QSTR_MATCH_UNI;
+		fmultiplier = nremainder;
+		nremainder = 0;
+		if(nhasattr == 0)
+		{
+			switch((ndstattr&QLayoutAttrMask))
+			{
+				case QLayoutLeft:
+				case QLayoutRight:
+					ndstattr &= ~QLayoutAttrMask;
+					ndstattr |= QLayoutWidth;
+					break;
+					
+				case QLayoutTop:
+				case QLayoutBottom:
+					ndstattr &= ~QLayoutAttrMask;
+					ndstattr |= QLayoutHeight;
+					break;
+			}
+		}
+		nflag = QSTR_UNI;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -172,7 +197,7 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 	}
 	else if(*pword == '*' || *pword == '/')
 	{
-		nflag = QSTR_MATCH_NUM;
+		nflag = QSTR_NUM;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -185,7 +210,7 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 		{
 			fmultiplier /= 1.0;
 		}
-		nflag = QSTR_MATCH_UNI;
+		nflag = QSTR_UNI;
 		pword = NULL;
 		nlen = 0;
 		npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -196,7 +221,7 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 		if(*pword == '%')
 		{
 			ndstattr |= QLayoutMPercent;
-			nflag = QSTR_MATCH_UNI;
+			nflag = QSTR_UNI;
 			pword = NULL;
 			nlen = 0;
 			npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -219,7 +244,7 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 	{
 		goto LAYOUT_FINISH;
 	}
-	nflag = QSTR_MATCH_NUM;
+	nflag = QSTR_NUM;
 	pword = NULL;
 	nlen = 0;
 	npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);
@@ -228,7 +253,7 @@ static QINT qmdlUIViewLayoutPosition(QMDL module, QINT layout, QINT attr, QSTR s
 		goto LAYOUT_FINISH;
 	}
 	nremainder = qstrint(0, pword, &nlen)*nminus;
-	nflag = QSTR_MATCH_UNI;
+	nflag = QSTR_UNI;
 	pword = NULL;
 	nlen = 0;
 	npos += qstrmatch(str+npos, len-npos, &nflag, &pword, &nlen);

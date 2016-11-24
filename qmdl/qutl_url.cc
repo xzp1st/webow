@@ -179,7 +179,7 @@ QINT qurlExpandPath(QPNT path, QPNT url, QINT size)
 	QUCHR vpath[QSTR_BUFF_SIZE];
 	QUCHR vbuffer[QSTR_BUFF_SIZE];
 
-	if(qstrcmp(QSTR_CMP_NONE, (QPNT )url, (QPNT )"./", 2) || qstrcmp(QSTR_CMP_NONE, (QPNT )url, (QPNT )"../", 3))
+	if(qstrcmp(QSTR_NONE, (QPNT )url, (QPNT )"./", 2) || qstrcmp(QSTR_NONE, (QPNT )url, (QPNT )"../", 3))
 	{
 		// 替换当前路径。
 		qstrcpy(vbuffer, sizeof(vbuffer), url, 0);
@@ -197,7 +197,7 @@ QINT qurlExpandPath(QPNT path, QPNT url, QINT size)
 			*pchar = 0;
 		}
 		nlen = qstrlen(vpath);
-		if(qstrcmp(QSTR_CMP_NONE, (QPNT )purl, (QPNT )"./", 2))
+		if(qstrcmp(QSTR_NONE, (QPNT )purl, (QPNT )"./", 2))
 		{
 			// 当前路径。
 			qstrcpy(url, size, vpath, 0);
@@ -1373,7 +1373,7 @@ static QINT qurl_has_cmp_scan_cb2(QPNT url, QPNT name, QPNT value, QINT size, QP
 	{
 		return 0;
 	}
-	if(!qstrcmp(QSTR_CMP_NONE, pdata->pname, name, 0))
+	if(!qstrcmp(QSTR_NONE, pdata->pname, name, 0))
 	{
 		return 1;
 	}
@@ -1439,7 +1439,7 @@ static QINT qurl_has_scan_cb1(QPNT url, QPNT name, QPNT value, QINT size, QPNT p
 	{
 		return 0;
 	}
-	if(!qstrcmp(QSTR_CMP_NONE, pdata->pname, name, 0))
+	if(!qstrcmp(QSTR_NONE, pdata->pname, name, 0))
 	{
 		return 1;
 	}
@@ -1612,7 +1612,7 @@ QINT qurlCmp(QINT flag, QPNT url1, QPNT url2)
 			// 协议长度不相同。
 			return 0;
 		}
-		else if(!qstrcmp(QSTR_CMP_ICASE, ppro1, ppro2, npro1))
+		else if(!qstrcmp(QSTR_ICS, ppro1, ppro2, npro1))
 		{
 			// 协议不相同。
 			return 0;
@@ -1666,7 +1666,7 @@ QINT qurlCmp(QINT flag, QPNT url1, QPNT url2)
 		}
 		while(1)
 		{
-			if(flag & QSTR_CMP_ICASE)
+			if(flag & QSTR_ICS)
 			{
 				chrurl1 = qurl_icmp_value(*purl1);
 				chrurl2 = qurl_icmp_value(*purl2);

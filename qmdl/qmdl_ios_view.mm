@@ -86,20 +86,34 @@ void QUIView::GetPosition(QRECT *rect)
 	rect->bottom = ((UIView *)midview).frame.origin.y+((UIView *)midview).frame.size.height;
 }
 
-extern QINT qmdlInitUIEvent(QMDL module);
+void QUIView::InvalidateDisplay(QRECT *rect)
+{
+	if(midview == nil)
+	{
+		return;
+	}
+	if(rect == NULL)
+	{
+		[(UIView *)midview setNeedsDisplay];
+	}
+	else
+	{
+		[(UIView *)midview setNeedsDisplayInRect:CGRectMake(rect->left, rect->top, rect->right, rect->bottom)];
+	}
+}
 
 QINT QUIViewSelfCb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QMDL pview;
+	QUIView *pview;
 	
-	pview = (QMDL)hdl;
+	pview = (QUIView *)hdl;
 	if(pview == NULL)
 	{
 		return QNO_OK;
 	}
 	if(code == QCD_MAKE)
 	{
-		qmdlInitUIEvent((QMDL)hdl);
+		pview->InitUIEvent();
 	}
 	
 	return QNO_OK;
@@ -135,13 +149,13 @@ QINT QUIView::GetAttrByName(QMDL module, QXML mxml, QSTR url, QPNT name, QPNT va
 
 id QUIView::FindViewByTag(QMDL env, QMDL parent, QMDL *module, QXML mxml, QSTR url, QINT *tag)
 {
+	id idview;
 	QPNT ptag;
 	QCHR vtag[QSTR_BUFF_SIZE];
-	QINT ntag, nlen;
-	id idview;
+	QINT nresult, ntag, nlen;
+	QXML pattr;
 	QMDL pparent;
 	QUIView *pview;
-	QXML pattr;
 	
 	ntag = 0;
 	if(mxml != NULL)
@@ -162,6 +176,14 @@ id QUIView::FindViewByTag(QMDL env, QMDL parent, QMDL *module, QXML mxml, QSTR u
 		if(nlen > 0)
 		{
 			ntag = qstrint(0, vtag, NULL);
+		}
+	}
+	else
+	{
+		nresult = ((QModule *)module)->GetInitItem((QPNT)"tag", NULL, (QPNT*)&ntag, &nlen);
+		if(nresult != QNO_OK)
+		{
+			ntag = 0;
 		}
 	}
 	if(tag != NULL)
@@ -361,8 +383,7 @@ QINT QUIViewInitActive(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count
 
 QINT QUIViewInitBackgroundColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
+	QINT nval, nlen;
 	QUIView *pview;
 	
 	pview = (QUIView *)hdl;
@@ -374,9 +395,12 @@ QINT QUIViewInitBackgroundColor(QHDL hdl, QPNT name, QINT code, QPNT params[], Q
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	((UIView *)(pview->midview)).backgroundColor = quiStr2UIColor(pval);
+	nval = (QINT)params[2];
+	nlen = (QINT)params[3];
+	((UIView *)(pview->midview)).backgroundColor = [UIColor colorWithRed:qclrGetRColor(nval)/255.0
+																   green:qclrGetGColor(nval)/255.0
+																	blue:qclrGetBColor(nval)/255.0
+																   alpha:qclrGetAColor(nval)/255.0];
 	
 	return QSCN_OK;
 }
@@ -552,42 +576,42 @@ static QINT qmdlUIViewInitPosition(QMDL module, QINT flag, QSTR str, QINT len)
 	if(*pchar == '.')
 	{
 		nlen = 0;
-		if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"width", 5))
+		if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"width", 5))
 		{
 			nattrflag = NSLayoutAttributeWidth;
 			nlen = 5;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"height", 6))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"height", 6))
 		{
 			nattrflag = NSLayoutAttributeHeight;
 			nlen = 6;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"left", 4))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"left", 4))
 		{
 			nattrflag = NSLayoutAttributeLeft;
 			nlen = 4;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"top", 3))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"top", 3))
 		{
 			nattrflag = NSLayoutAttributeTop;
 			nlen = 3;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"right", 5))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"right", 5))
 		{
 			nattrflag = NSLayoutAttributeRight;
 			nlen = 5;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"bottom", 6))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"bottom", 6))
 		{
 			nattrflag = NSLayoutAttributeBottom;
 			nlen = 6;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"vcenter", 7))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"vcenter", 7))
 		{
 			nattrflag = NSLayoutAttributeCenterY;
 			nlen = 7;
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)(pchar+1), (QPNT)"hcenter", 7))
+		else if(qstrcmp(QSTR_ICS, (QPNT)(pchar+1), (QPNT)"hcenter", 7))
 		{
 			nattrflag = NSLayoutAttributeCenterX;
 			nlen = 7;

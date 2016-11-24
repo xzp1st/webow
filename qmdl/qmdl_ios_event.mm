@@ -56,7 +56,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_TOUCHDOWN, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_TOUCHDOWN, 0);
 	}
 }
 
@@ -64,7 +64,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_DBLCLK, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_DBLCLK, 0);
 	}
 }
 
@@ -72,8 +72,8 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_TOUCHUP, 0);
-		mpmodule->DispatchEvent(NULL, QCD_CLICK, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_TOUCHUP, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_CLICK, 0);
 	}
 }
 
@@ -81,7 +81,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_TOUCHUP, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_TOUCHUP, 0);
 	}
 }
 
@@ -89,7 +89,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_CHANGE, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_CHANGE, 0);
 	}
 }
 
@@ -97,7 +97,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QEventTouchDragEnter, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QEventTouchDragEnter, 0);
 	}
 }
 
@@ -105,7 +105,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QEventTouchDragExit, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QEventTouchDragExit, 0);
 	}
 }
 
@@ -113,7 +113,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QEventTouchDragInside, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QEventTouchDragInside, 0);
 	}
 }
 
@@ -121,7 +121,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QEventTouchDragOutside, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QEventTouchDragOutside, 0);
 	}
 }
 
@@ -129,7 +129,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QEventTouchCancel, 0);
+		mpmodule->RouteEvent(NULL, NULL,  QEventTouchCancel, 0);
 	}
 }
 
@@ -137,7 +137,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_TAP, 1, recognizer);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_TAP, 1, recognizer);
 	}
 }
 
@@ -145,7 +145,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_PINCH, 1, recognizer);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_PINCH, 1, recognizer);
 	}
 }
 
@@ -153,7 +153,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_ROTATION, 1, recognizer);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_ROTATION, 1, recognizer);
 	}
 }
 
@@ -161,7 +161,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_SWIPE, 1, recognizer);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_SWIPE, 1, recognizer);
 	}
 }
 
@@ -169,7 +169,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_PAN, 1, recognizer);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_PAN, 1, recognizer);
 	}
 }
 
@@ -177,7 +177,7 @@
 {
 	if(mpmodule != NULL)
 	{
-		mpmodule->DispatchEvent(NULL, QCD_LONGPRESS, 1, recognizer);
+		mpmodule->RouteEvent(NULL, NULL,  QCD_LONGPRESS, 1, recognizer);
 	}
 }
 
@@ -189,21 +189,21 @@ static QINT qui_init_event_scan_cb(QMDL observed, QMDL observer,
 								   QSTR name, QINT code, QPFN event_fn, QPCB event_cb, QPNT params[], QINT count)
 {
 	id idview, idevent;
-	QMDL pobserved;
+	QUIView *pobserved;
 	
-	pobserved = (QMDL )params[0];
+	pobserved = (QUIView *)params[0];
 	if(pobserved != observed)
 	{
 		return QSCN_OK;
 	}
-	idview = ((QUIView *)pobserved)->midview;
-	idevent = ((QUIView *)pobserved)->midevent;
+	idview = pobserved->midview;
+	idevent = pobserved->midevent;
 	if(idevent == nil)
 	{
 		if(code != 0)
 		{
 			idevent = [[QIOSUIEvent alloc] initWithModule: pobserved];
-			((QUIView *)pobserved)->midevent = idevent;
+			pobserved->midevent = idevent;
 		}
 	}
 	switch(code)
@@ -323,18 +323,9 @@ static QINT qui_init_event_scan_cb(QMDL observed, QMDL observer,
 	return QSCN_OK;
 }
 
-QINT qmdlInitUIEvent(QMDL module)
+void QUIView::InitUIEvent()
 {
-	QBaseView *pview;
-	
-	pview = dynamic_cast<QBaseView *>(module);
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	pview->ScanEvent(qui_init_event_scan_cb, 1, module);
-	
-	return QSCN_OK;
+	ScanEvent(qui_init_event_scan_cb, 1, this);
 }
 
 #endif

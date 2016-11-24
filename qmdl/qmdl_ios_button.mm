@@ -48,8 +48,8 @@ qstr_enum_begin(QUIButtonStyle)
 	qstr_enum_item( "round",				UIButtonTypeRoundedRect )
 	qstr_enum_item( "detail",				UIButtonTypeDetailDisclosure )
 	qstr_enum_item( "light",				UIButtonTypeInfoLight )
-	qstr_enum_item( "dark",				UIButtonTypeInfoDark )
-	qstr_enum_item( "add",				UIButtonTypeContactAdd )
+	qstr_enum_item( "dark",					UIButtonTypeInfoDark )
+	qstr_enum_item( "add",					UIButtonTypeContactAdd )
 qstr_enum_end
 
 QUIButton::QUIButton()
@@ -65,52 +65,8 @@ QINT QUIButton::MakeModuleBegin(QMDL env, QMDL parent, QXML mxml, QSTR url)
 	return QSCN_OK;
 }
 
-QINT QUIButtonInitBase(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
-{
-	id idview;
-	QMDL penv;
-	QXML pxml;
-	QUCHR vbuff[QSTR_BUFF_SIZE];
-	QINT nlen, ncnt, ntag;
-	QUIButton *pview;
-	UIButtonType ntype;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview != nil)
-	{
-		return QNO_OK;
-	}
-	penv = (QMDL)params[0];
-	pxml = (QXML)params[2];
-	ntag = 0;
-	idview = pview->FindViewByTag(penv, pview, NULL, pxml, (QSTR)name, &ntag);
-	if(idview != nil)
-	{
-		pview->midview = idview;
-		((QIOSUIButton *)pview->midview).tag = ntag;
-		return QSCN_OK;
-	}
-	nlen = pview->GetAttrByName(pview, pxml, NULL, (QPNT)"style", vbuff, sizeof(vbuff));
-	ncnt = nlen;
-	ntype = (UIButtonType)qstr2enum(QUIButtonStyle, 1, (QPNT)vbuff, &ncnt);
-	if(ncnt <= 0)
-	{
-		ntype = UIButtonTypeRoundedRect;
-	}
-	pview->midview = (id)[QIOSUIButton buttonWithType:ntype module:pview];
-	
-	return QSCN_OK;
-}
-
 QINT QUIButtonInitFont(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen, ncnt, nsize;
-	QCHR vfont[QSTR_BUFF_SIZE];
 	QUIButton *pview;
 	
 	pview = (QUIButton *)hdl;
@@ -122,27 +78,32 @@ QINT QUIButtonInitFont(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	ncnt = nlen;
-	nsize = qstrint(0, pval, &ncnt);
-	if(ncnt == nlen)
+	if(code == QCD_GET)
 	{
-		((QIOSUIButton *)(pview->midview)).font = [UIFont systemFontOfSize:nsize];
+		__weak UIFont **pval;
+		QINT *plen;
+		
+		pval = (__weak UIFont**)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = ((QIOSUIButton *)(pview->midview)).font;
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(UIFont*);
+		}
 	}
-	else
+	else if(code == QCD_SET)
 	{
-		qstrscan((QPNT)pval, nlen, (QPNT)"%s-%d", vfont, &nsize);
-		((QIOSUIButton *)(pview->midview)).font = [UIFont fontWithName:[NSString stringWithUTF8String:(const char *)vfont] size:nsize];
+		((QIOSUIButton *)(pview->midview)).font = (__bridge UIFont*)params[2];
 	}
 	
 	return QNO_OK;
 }
 
-QINT QUIButtonInitNormalTitle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+QINT QUIButtonInitNormalColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
 	QUIButton *pview;
 	
 	pview = (QUIButton *)hdl;
@@ -154,18 +115,38 @@ QINT QUIButtonInitNormalTitle(QHDL hdl, QPNT name, QINT code, QPNT params[], QIN
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setTitle:[NSString stringWithCString:(const char *)pval length:nlen]
-										forState:UIControlStateNormal];
+	if(code == QCD_GET)
+	{
+		QINT *pval, *plen;
+		
+		pval = (QINT*)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = quiUIColor2RGBA(((QIOSUIButton *)(pview->midview)).titleLabel.textColor);
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(QINT);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		QINT nval, nlen;
+		
+		nval = (QINT)params[2];
+		nlen = (QINT)params[3];
+		((QIOSUIButton *)(pview->midview)).titleLabel.textColor = [UIColor colorWithRed:qclrGetRColor(nval)/255.0
+																				  green:qclrGetGColor(nval)/255.0
+																				   blue:qclrGetBColor(nval)/255.0
+																				  alpha:qclrGetAColor(nval)/255.0];
+	}
 	
 	return QSCN_OK;
 }
 
-QINT QUIButtonInitNormalColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+static QINT QUIButtonInitStateTitle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count, QINT state)
 {
-	QSTR pval;
-	QINT nlen;
 	QUIButton *pview;
 	
 	pview = (QUIButton *)hdl;
@@ -177,264 +158,225 @@ QINT QUIButtonInitNormalColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QIN
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	((QIOSUIButton *)(pview->midview)).titleLabel.textColor = quiStr2UIColor(pval);
+	if(code == QCD_GET)
+	{
+		QSTR *pval;
+		QINT *plen;
+		
+		pval = (QSTR*)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = (QSTR)[[((QIOSUIButton *)(pview->midview)) titleForState:state] UTF8String];
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(QSTR);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		QSTR pval;
+		QINT nlen;
+		
+		pval = (QSTR )params[2];
+		nlen = (QINT )params[3];
+		[((QIOSUIButton *)(pview->midview)) setTitle:quiUtf82NSString(pval, nlen)
+											forState:state];
+	}
 	
 	return QSCN_OK;
+}
+
+static QINT QUIButtonInitStateImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count, QINT state)
+{
+	QUIButton *pview;
+	
+	pview = (QUIButton *)hdl;
+	if(pview == NULL)
+	{
+		return QNO_FAIL;
+	}
+	if(pview->midview == nil)
+	{
+		return QNO_FAIL;
+	}
+	if(code == QCD_GET)
+	{
+		__weak UIImage **pval;
+		QINT *plen;
+		
+		pval = (__weak UIImage**)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = (UIImage*)[((QIOSUIButton *)(pview->midview)) imageForState:state];
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(UIImage*);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		QSTR pval;
+		QINT nlen;
+		pval = (QSTR )params[2];
+		nlen = (QINT )params[3];
+		[((QIOSUIButton *)(pview->midview)) setImage:[UIImage imageNamed:quiUtf82NSString(pval, nlen)]
+											forState:state];
+	}
+	
+	return QSCN_OK;
+}
+
+static QINT QUIButtonInitStateBackgroundImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count, QINT state)
+{
+	QUIButton *pview;
+	
+	pview = (QUIButton *)hdl;
+	if(pview == NULL)
+	{
+		return QNO_FAIL;
+	}
+	if(pview->midview == nil)
+	{
+		return QNO_FAIL;
+	}
+	if(code == QCD_GET)
+	{
+		__weak UIImage **pval;
+		QINT *plen;
+		
+		pval = (__weak UIImage**)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = (UIImage*)[((QIOSUIButton *)(pview->midview)) backgroundImageForState:state];
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(UIImage*);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		QSTR pval;
+		QINT nlen;
+		pval = (QSTR )params[2];
+		nlen = (QINT )params[3];
+		[((QIOSUIButton *)(pview->midview)) setBackgroundImage:[UIImage imageNamed:quiUtf82NSString(pval, nlen)]
+													  forState:state];
+	}
+	
+	return QSCN_OK;
+}
+
+QINT QUIButtonInitNormalTitle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	return QUIButtonInitStateTitle(hdl, name, code, params, count, UIControlStateNormal);
 }
 
 QINT QUIButtonInitNormalImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-										forState:UIControlStateNormal];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateImage(hdl, name, code, params, count, UIControlStateNormal);
 }
 
 QINT QUIButtonInitNormalBackgroundImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setBackgroundImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-												  forState:UIControlStateNormal];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateBackgroundImage(hdl, name, code, params, count, UIControlStateNormal);
 }
 
 QINT QUIButtonInitHighlightTitle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setTitle:[NSString stringWithCString:(const char *)pval length:nlen]
-										forState:UIControlStateHighlighted];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateTitle(hdl, name, code, params, count, UIControlStateHighlighted);
 }
 
 QINT QUIButtonInitHighlightImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-										forState:UIControlStateHighlighted];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateImage(hdl, name, code, params, count, UIControlStateHighlighted);
 }
 
 QINT QUIButtonInitHighlightBackgroundImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setBackgroundImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-												  forState:UIControlStateHighlighted];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateBackgroundImage(hdl, name, code, params, count, UIControlStateHighlighted);
 }
 
 QINT QUIButtonInitDisableTitle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setTitle:[NSString stringWithCString:(const char *)pval length:nlen]
-										forState:UIControlStateDisabled];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateTitle(hdl, name, code, params, count, UIControlStateDisabled);
 }
 
 QINT QUIButtonInitDisableImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setBackgroundImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-										forState:UIControlStateDisabled];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateImage(hdl, name, code, params, count, UIControlStateDisabled);
 }
 
 QINT QUIButtonInitDisableBackgroundImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setBackgroundImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-										forState:UIControlStateDisabled];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateBackgroundImage(hdl, name, code, params, count, UIControlStateDisabled);
 }
 
 QINT QUIButtonInitSelectedTitle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setTitle:[NSString stringWithCString:(const char *)pval length:nlen]
-										forState:UIControlStateSelected];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateTitle(hdl, name, code, params, count, UIControlStateSelected);
 }
 
 QINT QUIButtonInitSelectedImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
-	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
-	{
-		return QNO_FAIL;
-	}
-	if(pview->midview == nil)
-	{
-		return QNO_FAIL;
-	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-										forState:UIControlStateSelected];
-	
-	return QSCN_OK;
+	return QUIButtonInitStateImage(hdl, name, code, params, count, UIControlStateSelected);
 }
 
 QINT QUIButtonInitSelectedBackgroundImage(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
-	QUIButton *pview;
+	return QUIButtonInitStateBackgroundImage(hdl, name, code, params, count, UIControlStateSelected);
+}
+
+static QINT QUIButtonOnMake(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QPNT ptype, pstyle;
+	QUIButton *pbutton;
+	QINT nresult, nlen, ncnt, nstyle;
 	
-	pview = (QUIButton *)hdl;
-	if(pview == NULL)
+	pbutton = (QUIButton *)hdl;
+	if(pbutton == NULL)
 	{
-		return QNO_FAIL;
+		return QNO_OK;
 	}
-	if(pview->midview == nil)
+	if(pbutton->midview == nil)
 	{
-		return QNO_FAIL;
+		nstyle = UIButtonTypeRoundedRect;
+		nresult = pbutton->GetInitItem((QPNT)"style", &ptype, &pstyle, &nlen);
+		if(nresult == QNO_OK)
+		{
+			ncnt = nlen;
+			nstyle = (UIButtonType)qstr2enum(QUIButtonStyle, 1, pstyle, &ncnt);
+			if(ncnt <= 0)
+			{
+				nstyle = UIButtonTypeRoundedRect;
+			}
+		}
+		pbutton->midview = (id)[QIOSUIButton buttonWithType:(UIButtonType)nstyle module:pbutton];
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	[((QIOSUIButton *)(pview->midview)) setBackgroundImage:[UIImage imageNamed:[NSString stringWithCString:(const char *)pval length:nlen]]
-												  forState:UIControlStateSelected];
 	
-	return QSCN_OK;
+	return QNO_OK;
+}
+
+QINT QUIButtonSelfCb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QUIButton *pbutton;
+	
+	pbutton = (QUIButton *)hdl;
+	if(pbutton == NULL)
+	{
+		return QNO_OK;
+	}
+	if(code == QCD_MAKE)
+	{
+		QUIButtonOnMake(hdl, name, code, params, count);
+	}
+	
+	return QNO_OK;
 }
 
 #endif

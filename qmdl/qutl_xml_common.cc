@@ -3,7 +3,7 @@
 #include "qmdl_module.h"
 
 
-QPNT qxmlGetTag(QHDL res)
+QSTR qxmlGetTag(QHDL res)
 {
 	QXML pitem;
 	
@@ -16,7 +16,7 @@ QPNT qxmlGetTag(QHDL res)
 	return ((struct qxml_item_info *)pitem)->ptag;
 }
 
-QPNT qxmlGetId(QHDL res)
+QSTR qxmlGetId(QHDL res)
 {
 	QXML pitem;
 	

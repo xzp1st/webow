@@ -2,7 +2,11 @@
 #include "qmdl_base.h"
 
 
-qstr_enum_begin(QUIColor)
+static QINT QCLREnum_cb(QENUM vals, QINT flag, QPNT str, QINT *count, QINT value);
+
+qstr_enum_begin(QCLREnum)
+	qstr_enum_cb( QCLREnum_cb )
+
 	qstr_enum_item( "black",			QCLR_BLACK )
 	qstr_enum_item( "gray0",			QCLR_GRAY0 )
 	qstr_enum_item( "gray1",			QCLR_GRAY1 )
@@ -22,39 +26,40 @@ qstr_enum_begin(QUIColor)
 	qstr_enum_item( "gray15",			QCLR_GRAY15 )
 	qstr_enum_item( "white",			QCLR_WHITE )
 
-	qstr_enum_item( "blue",			QCLR_BLUE )
+	qstr_enum_item( "blue",				QCLR_BLUE )
 	qstr_enum_item( "green",			QCLR_GREEN )
-	qstr_enum_item( "cyan",			QCLR_CYAN )
-	qstr_enum_item( "red",			QCLR_RED )
-	qstr_enum_item( "magenta",		QCLR_MAGENTA )
+	qstr_enum_item( "cyan",				QCLR_CYAN )
+	qstr_enum_item( "red",				QCLR_RED )
+	qstr_enum_item( "magenta",			QCLR_MAGENTA )
 	qstr_enum_item( "brown",			QCLR_BROWN )
 	qstr_enum_item( "ltgray",			QCLR_LTGRAY )
-	qstr_enum_item( "gray",			QCLR_GRAY )
+	qstr_enum_item( "gray",				QCLR_GRAY )
 	qstr_enum_item( "ltblue",			QCLR_LTBLUE )
-	qstr_enum_item( "ltgreen",		QCLR_LTGREEN )
+	qstr_enum_item( "ltgreen",			QCLR_LTGREEN )
 	qstr_enum_item( "ltcyan",			QCLR_LTCYAN )
 	qstr_enum_item( "ltred",			QCLR_LTRED )
 	qstr_enum_item( "ltmagenta",		QCLR_LTMAGENTA )
 	qstr_enum_item( "yellow",			QCLR_YELLOW )
 qstr_enum_end
 
-
-QCLR quiStr2Color(QSTR color, QINT size)
+static QINT QCLREnum_cb(QENUM vals, QINT flag, QPNT str, QINT *count, QINT value)
 {
+	QSTR pstr;
 	QINT nlen, ncount, ncolor, nrcolor, ngcolor, nbcolor, nacolor;
 	
-	if(color == NULL)
+	pstr = (QSTR)str;
+	if(pstr == NULL)
 	{
-		return 0;
+		return (QINT)qstr4enumi(vals, value);
 	}
-	ncount = 0;
-	ncolor = qstr2enum(QUIColor, 1, (QPNT )color, &ncount);
-	if(ncount > 0)
+	if(pstr[0] != '#')
 	{
-		return 0;
-	}
-	if(color[0] != '#')
-	{
+		ncount = 0;
+		ncolor = qstr2enumi(QCLREnum, 1, (QPNT )pstr, &ncount);
+		if(ncount <= 0)
+		{
+			return 0;
+		}
 		nrcolor = qclrGetRColor(ncolor);
 		ngcolor = qclrGetGColor(ncolor);
 		nbcolor = qclrGetBColor(ncolor);
@@ -62,17 +67,17 @@ QCLR quiStr2Color(QSTR color, QINT size)
 	}
 	else
 	{
-		nlen = qstrlen(color);
+		nlen = qstrlen(pstr);
 		if(nlen <= 6)
 		{
 			return 0;
 		}
 		ncount = 2;
-		nrcolor = qstrint(16, (QPNT )&color[1], &ncount);
+		nrcolor = qstrint(16, (QPNT)&pstr[1], &ncount);
 		ncount = 2;
-		ngcolor = qstrint(16, (QPNT )&color[3], &ncount);
+		ngcolor = qstrint(16, (QPNT)&pstr[3], &ncount);
 		ncount = 2;
-		nbcolor = qstrint(16, (QPNT )&color[5], &ncount);
+		nbcolor = qstrint(16, (QPNT)&pstr[5], &ncount);
 		if(nlen < 8)
 		{
 			nacolor = 255;
@@ -80,8 +85,12 @@ QCLR quiStr2Color(QSTR color, QINT size)
 		else
 		{
 			ncount = 2;
-			nacolor = qstrint(16, (QPNT )&color[7], &ncount);
+			nacolor = qstrint(16, (QPNT)&pstr[7], &ncount);
 		}
+	}
+	if(count != NULL)
+	{
+		*count = 1;
 	}
 	
 	return (QCLR)qclrMakeRGBA(nrcolor, ngcolor, nbcolor, nacolor);

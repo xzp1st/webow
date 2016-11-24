@@ -49,7 +49,7 @@ static QINT qmdl_find_module_by_name_cb(QHDL hdl, QPNT name, QINT code, QPNT par
 	psrcname = (QPNT)params[0];
 	nnamelen = (QINT)params[1];
 	pdstname = pmodule->GetName();
-	if(!qstrcmp(QSTR_CMP_ICASE, psrcname, pdstname, nnamelen))
+	if(!qstrcmp(QSTR_ICS, psrcname, pdstname, nnamelen))
 	{
 		return QSCN_OK;
 	}
@@ -124,11 +124,11 @@ QMDL IQModule::FindModule(QSTR path, QINT pathlen, QSTR name, QINT namelen)
 			{
 				break;
 			}
-			if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pname, (QPNT)".", nlen))
+			if(qstrcmp(QSTR_ICS, (QPNT)pname, (QPNT)".", nlen))
 			{
 				pchild = pmodule;
 			}
-			else if(qstrcmp(QSTR_CMP_ICASE, (QPNT)pname, (QPNT)"..", nlen))
+			else if(qstrcmp(QSTR_ICS, (QPNT)pname, (QPNT)"..", nlen))
 			{
 				pchild = pmodule->ParentModule();
 			}
@@ -138,7 +138,7 @@ QMDL IQModule::FindModule(QSTR path, QINT pathlen, QSTR name, QINT namelen)
 				while(pchild)
 				{
 					pchildname = pchild->GetName();
-					if(pchildname != NULL && qstrcmp(QSTR_CMP_ICASE, pchildname, pname, nlen))
+					if(pchildname != NULL && qstrcmp(QSTR_ICS, pchildname, pname, nlen))
 					{
 						break;
 					}

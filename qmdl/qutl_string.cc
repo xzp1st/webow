@@ -168,6 +168,90 @@ QINT qstrint(QINT system, QPNT str, QINT *len)
 		}
 			break;
 			
+		case 8:
+		{
+			// 8-system
+			while(1)
+			{
+				if(nsize > 0 && nlen >= nsize)
+				{
+					break;
+				}
+				chchar = *pchar;
+				if(chchar == 0)
+				{
+					break;
+				}
+				else if(chchar >= '0' && chchar <= '7')
+				{
+					nint = (nint<<3)+(chchar-'0');
+				}
+				else
+				{
+					break;
+				}
+				pchar++;
+				nlen++;
+			}
+		}
+			break;
+			
+		case 4:
+		{
+			// 8-system
+			while(1)
+			{
+				if(nsize > 0 && nlen >= nsize)
+				{
+					break;
+				}
+				chchar = *pchar;
+				if(chchar == 0)
+				{
+					break;
+				}
+				else if(chchar >= '0' && chchar <= '3')
+				{
+					nint = (nint<<2)+(chchar-'0');
+				}
+				else
+				{
+					break;
+				}
+				pchar++;
+				nlen++;
+			}
+		}
+			break;
+			
+		case 2:
+		{
+			// 8-system
+			while(1)
+			{
+				if(nsize > 0 && nlen >= nsize)
+				{
+					break;
+				}
+				chchar = *pchar;
+				if(chchar == 0)
+				{
+					break;
+				}
+				else if(chchar >= '0' && chchar <= '1')
+				{
+					nint = (nint<<1)+(chchar-'0');
+				}
+				else
+				{
+					break;
+				}
+				pchar++;
+				nlen++;
+			}
+		}
+			break;
+			
 		case 10:
 		{
 			// 10-system
@@ -278,7 +362,7 @@ QINT qstrcmp(QINT flag, QPNT str1, QPNT str2, QINT size)
 		}
 		if(chdst != chsrc)
 		{
-			if(flag & QSTR_CMP_ICASE)
+			if(flag & QSTR_ICS)
 			{
 				// ignore case
 				if(chdst >= 'a' && chdst <= 'z')
@@ -335,7 +419,7 @@ QPNT qstrchr(QINT flag, QPNT str, QINT size, QINT chr)
 	QINT npos;
 	QUCHR *pchar, ndst, nsrc;
 	
-	if(flag & QSTR_CMP_ICASE)
+	if(flag & QSTR_ICS)
 	{
 		if(chr >= 'A' && chr <= 'Z')
 		{
@@ -363,7 +447,7 @@ QPNT qstrchr(QINT flag, QPNT str, QINT size, QINT chr)
 		{
 			break;
 		}
-		if(flag & QSTR_CMP_ICASE)
+		if(flag & QSTR_ICS)
 		{
 			if(ndst >= 'A' && ndst <= 'Z')
 			{
@@ -386,7 +470,7 @@ QPNT qstrrchr(QINT flag, QPNT str, QINT size, QINT chr)
 	QINT npos;
 	QUCHR *pchar, ndst, nsrc;
 	
-	if(flag & QSTR_CMP_ICASE)
+	if(flag & QSTR_ICS)
 	{
 		if(chr >= 'A' && chr <= 'Z')
 		{
@@ -421,7 +505,7 @@ QPNT qstrrchr(QINT flag, QPNT str, QINT size, QINT chr)
 			break;
 		}
 		ndst = *pchar;
-		if(flag & QSTR_CMP_ICASE)
+		if(flag & QSTR_ICS)
 		{
 			if(ndst >= 'A' && ndst <= 'Z')
 			{
@@ -468,7 +552,7 @@ QPNT qstrstr(QINT flag, QPNT str, QINT size, QPNT mode)
 		while(1)
 		{
 			chrstr = *pstr++; chrmode = *pmode++;
-			if(flag & QSTR_CMP_ICASE)
+			if(flag & QSTR_ICS)
 			{
 				if(chrstr >= 'A' && chrstr <= 'Z')
 				{
@@ -1154,10 +1238,10 @@ QINT qstrmatch(QSTR str, QINT size, QINT *flag, QSTR *read, QINT *len)
 	QINT nflag, nend, nlen, ndstpos, ndstflag, ndstlen, nsrcflag, nsrclen, ncmpflag;
 	
 	// 参数初始化。
-	nsrcflag = QSTR_MATCH_ASC;
+	nsrcflag = QSTR_ASC;
 	if(flag != NULL)
 	{
-		if(*flag != QSTR_MATCH_NONE)
+		if(*flag != QSTR_NONE)
 		{
 			nsrcflag = *flag;
 		}
@@ -1184,7 +1268,7 @@ QINT qstrmatch(QSTR str, QINT size, QINT *flag, QSTR *read, QINT *len)
 	
 READ_BEGIN:
 	// 开始读取。
-	ndstflag = QSTR_MATCH_NONE;
+	ndstflag = QSTR_NONE;
 	pdstread = NULL;
 	ndstlen = 0;
 	if(pbegin == NULL)
@@ -1228,42 +1312,42 @@ READ_BEGIN:
 		if(*(pdstchar+1) == 'x' || *(pdstchar+1) == 'X')
 		{
 			// 十六进制。
-			ndstflag = QSTR_MATCH_HEX;
+			ndstflag = QSTR_HEX;
 		}
 		else
 		{
 			// 十进制。
-			ndstflag = QSTR_MATCH_DEC;
+			ndstflag = QSTR_DEC;
 		}
 	}
 	else if(chchar >= '0' && chchar <= '9')
 	{
 		// 十进制。
-		ndstflag = QSTR_MATCH_DEC;
+		ndstflag = QSTR_DEC;
 	}
 	else if( (chchar >= 'a' && chchar <= 'z') || (chchar >= 'A' && chchar <= 'Z') || (chchar == '_') )
 	{
 		// ASC词语。
-		ndstflag = QSTR_MATCH_AWD;
+		ndstflag = QSTR_AWD;
 	}
 	else if( (chchar > 0x80) && (chchar < 0xff) )
 	{
 		// UNICODE词语。
-		ndstflag = QSTR_MATCH_UWD;
+		ndstflag = QSTR_UWD;
 	}
 	else
 	{
 		// 符号。
-		ndstflag = QSTR_MATCH_SYM;
+		ndstflag = QSTR_SYM;
 		switch(chchar)
 		{
 			case '\'':
 			case '"':
 			{
-				if(nsrcflag & QSTR_MATCH_STR)
+				if(nsrcflag & QSTR_STR)
 				{
 					// 字符串。
-					ndstflag = QSTR_MATCH_STR;
+					ndstflag = QSTR_STR;
 				}
 			}
 			break;
@@ -1273,30 +1357,30 @@ READ_BEGIN:
 			case '{':
 			case '<':
 			{
-				if(nsrcflag & QSTR_MATCH_BLK)
+				if(nsrcflag & QSTR_BLK)
 				{
 					// 串块。
-					ndstflag = QSTR_MATCH_BLK;
+					ndstflag = QSTR_BLK;
 				}
 			}
 			break;
 				
 			case '$':
 			{
-				if(nsrcflag & QSTR_MATCH_VAL)
+				if(nsrcflag & QSTR_VAL)
 				{
 					// 取值。
-					ndstflag = QSTR_MATCH_VAL;
+					ndstflag = QSTR_VAL;
 				}
 			}
 			break;
 				
 			case '@':
 			{
-				if(nsrcflag & QSTR_MATCH_OBJ)
+				if(nsrcflag & QSTR_OBJ)
 				{
 					// 对象。
-					ndstflag = QSTR_MATCH_OBJ;
+					ndstflag = QSTR_OBJ;
 				}
 			}
 			break;
@@ -1305,10 +1389,10 @@ READ_BEGIN:
 			{
 				if(*(pdstchar+1) == '/' || *(pdstchar+1) == '\\')
 				{
-					if(nsrcflag & QSTR_MATCH_URL)
+					if(nsrcflag & QSTR_URL)
 					{
 						// URL串。
-						ndstflag = QSTR_MATCH_URL;
+						ndstflag = QSTR_URL;
 					}
 				}
 			}
@@ -1316,10 +1400,10 @@ READ_BEGIN:
 				
 			case '/':
 			{
-				if(nsrcflag & QSTR_MATCH_URL)
+				if(nsrcflag & QSTR_URL)
 				{
 					// URL串。
-					ndstflag = QSTR_MATCH_URL;
+					ndstflag = QSTR_URL;
 				}
 			}
 			break;
@@ -1328,10 +1412,10 @@ READ_BEGIN:
 			{
 				if(*(pdstchar+1) != '.' && *(pdstchar+1) != '\\')
 				{
-					if(nsrcflag & QSTR_MATCH_URL)
+					if(nsrcflag & QSTR_URL)
 					{
 						// URL串。
-						ndstflag = QSTR_MATCH_URL;
+						ndstflag = QSTR_URL;
 					}
 				}
 			}
@@ -1340,10 +1424,10 @@ READ_BEGIN:
 	}
 	nend = 0;
 	chchar = 0;
-	ncmpflag = (nsrcflag&QSTR_MATCH_ICS) ? QSTR_CMP_ICASE : QSTR_CMP_NONE;
+	ncmpflag = nsrcflag;
 	switch(ndstflag)
 	{
-		case QSTR_MATCH_DEC:
+		case QSTR_DEC:
 			// 十进制数值。
 			pdstread = pdstchar;
 			while(pdstchar)
@@ -1380,7 +1464,7 @@ READ_BEGIN:
 			}
 			break;
 			
-		case QSTR_MATCH_HEX:
+		case QSTR_HEX:
 			// 十六进制数值。
 			pdstread = pdstchar;
 			pdstchar += 2;
@@ -1433,7 +1517,7 @@ READ_BEGIN:
 			}
 			break;
 			
-		case QSTR_MATCH_AWD:
+		case QSTR_AWD:
 			// ASC词语。
 			pdstread = pdstchar;
 			while(pdstchar)
@@ -1487,7 +1571,7 @@ READ_BEGIN:
 			}
 			break;
 			
-		case QSTR_MATCH_UWD:
+		case QSTR_UWD:
 			// UNICODE词语。
 			pdstread = pdstchar;
 			while(pdstchar)
@@ -1564,7 +1648,7 @@ READ_BEGIN:
 			}
 			break;
 			
-		case QSTR_MATCH_SYM:
+		case QSTR_SYM:
 			// 符号。
 			chchar = *pdstchar;
 			if(chchar == 0)
@@ -1607,7 +1691,7 @@ READ_BEGIN:
 			ndstlen += nlen;
 			break;
 			
-		case QSTR_MATCH_STR:
+		case QSTR_STR:
 			// 字符串。
 			pdstread = pdstchar+1;
 			while(pdstchar)
@@ -1646,11 +1730,11 @@ READ_BEGIN:
 			}
 			break;
 			
-		case QSTR_MATCH_VAL:
-		case QSTR_MATCH_OBJ:
-		case QSTR_MATCH_BLK:
+		case QSTR_VAL:
+		case QSTR_OBJ:
+		case QSTR_BLK:
 			// 参数、取值。
-			if(ndstflag == QSTR_MATCH_VAL || ndstflag == QSTR_MATCH_OBJ)
+			if(ndstflag == QSTR_VAL || ndstflag == QSTR_OBJ)
 			{
 				pdstchar++;
 				ndstpos++;
@@ -1795,7 +1879,7 @@ READ_BEGIN:
 			}
 			break;
 			
-		case QSTR_MATCH_URL:
+		case QSTR_URL:
 			// URL资源路径。
 			pdstread = pdstchar;
 			while(pdstchar)
@@ -1829,7 +1913,7 @@ READ_BEGIN:
 			break;
 			
 		default:
-			ndstflag = QSTR_MATCH_NONE;
+			ndstflag = QSTR_NONE;
 			pdstread = NULL;
 			ndstlen = 0;
 			goto READ_EXIT;
@@ -1843,7 +1927,7 @@ READ_BEGIN:
 	if(nend == 1)
 	{
 		// 获取结束。
-		ndstflag = QSTR_MATCH_NONE;
+		ndstflag = QSTR_NONE;
 		pdstread = NULL;
 		ndstlen = 0;
 		goto READ_EXIT;
@@ -1867,98 +1951,4 @@ READ_EXIT:
 	}
 	
 	return ndstpos;
-}
-
-QPNT qstr4enum(QBITS map, QINT value)
-{
-	struct qstrenum_item *pitem;
-	
-	if(map == NULL)
-	{
-		return NULL;
-	}
-	pitem = (struct qstrenum_item *)map->pitems;
-	while(pitem)
-	{
-		if(pitem->pstr == NULL)
-		{
-			break;
-		}
-		if(pitem->nvalue == value)
-		{
-			break;
-		}
-		pitem++;
-	}
-	
-	return pitem->pstr;
-}
-
-QINT qstr2enum(QBITS map, QINT flag, QPNT str, QINT *count)
-{
-	QINT nlen, nsize, ncount, nvalue;
-	QUCHR *pcur, *pnext, vvalue[QSTR_BUFF_SIZE];
-	struct qstrenum_item *pitem;
-	
-	if(map == NULL || str == NULL)
-	{
-		if(count != NULL)
-		{
-			*count = 0;
-		}
-		
-		return 0;
-	}
-	ncount = 0;
-	nvalue = 0;
-	pcur = (QUCHR *)str;
-	if(count != NULL)
-	{
-		nsize = *count;
-	}
-	else
-	{
-		nsize = 0;
-	}
-	while(pcur)
-	{
-		pnext = (QUCHR *)qstrchr(0, (QPNT )pcur, nsize, (QINT )'|');
-		if(pnext == NULL)
-		{
-			nlen = qstrlen((QUCHR *)pcur);
-			qstrstrip(vvalue, sizeof(vvalue), pcur, nlen);
-		}
-		else
-		{
-			nlen = pnext-pcur;
-			qstrstrip(vvalue, sizeof(vvalue), pcur, nlen);
-		}
-		pitem = (struct qstrenum_item *)map->pitems;
-		while(pitem)
-		{
-			if(pitem->pstr == NULL)
-			{
-				break;
-			}
-			if(qstrcmp(flag, pitem->pstr, vvalue, 0))
-			{
-				ncount++;
-				nvalue |= (QINT )pitem->nvalue;
-				break;
-			}
-			pitem++;
-		}
-		if(pnext == NULL)
-		{
-			break;
-		}
-		pcur = pnext+1;
-		nsize -= nlen+1;
-	}
-	if(count != NULL)
-	{
-		*count = ncount;
-	}
-	
-	return nvalue;
 }

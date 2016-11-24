@@ -15,6 +15,7 @@ QModule::QModule():
 	mhAttrLink(NULL),
 	mhMthdLink(NULL),
 	mhObsrLink(NULL),
+	mhInitLink(NULL),
 	mpParentModule(NULL),
 	mpPrevModule(NULL),
 	mpNextModule(NULL),
@@ -32,14 +33,18 @@ QModule::QModule(QSTR name, QINT size):
     mnRefer(0),
     mpcbMake(NULL),
 	mpUserData(NULL),
+	mpcbSelf(NULL),
+	mpcbUser(NULL),
 	mhAttrLink(NULL),
 	mhMthdLink(NULL),
 	mhObsrLink(NULL),
-    mpParentModule(NULL),
+	mhInitLink(NULL),
+	mpParentModule(NULL),
     mpPrevModule(NULL),
     mpNextModule(NULL),
     mpHeadModule(NULL),
-    mpTailModule(NULL)
+    mpTailModule(NULL),
+	mnInitDepth(0)
 {
     QINT nlen;
     
@@ -566,7 +571,7 @@ QMDL QModule::RegisterModule(QSTR path, QPMK new_cb)
 		while(pchild)
 		{
 			pchildname = pchild->GetName();
-			if(pchildname != NULL && qstrcmp(QSTR_CMP_NONE, pchildname, pname, nlen))
+			if(pchildname != NULL && qstrcmp(QSTR_NONE, pchildname, pname, nlen))
 			{
 				break;
 			}
@@ -662,7 +667,7 @@ QMDL QModule::RegisterModule(QSTR path, QMDL module)
 		while(pchild)
 		{
 			pchildname = pchild->GetName();
-			if(pchildname != NULL && qstrcmp(QSTR_CMP_NONE, pchildname, pname, nlen))
+			if(pchildname != NULL && qstrcmp(QSTR_NONE, pchildname, pname, nlen))
 			{
 				break;
 			}
@@ -702,12 +707,21 @@ QMDL QModule::RegisterModule(QSTR path, QMDL module)
 
 static QINT qmdl_module_delete_post_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
+	QPNT vpprms[8];
 	QModule *pmodule;
-
+	QINT nresult, ncount;
+	
 	pmodule = (QModule *)hdl;
 	if(pmodule == NULL)
 	{
 		return QSCN_END;
+	}
+	ncount = 0;
+	vpprms[ncount++] = (QPNT)pmodule;
+	nresult = pmodule->ModuleCb(NULL, (QINT)QCD_FREE, vpprms, ncount);
+	if(nresult != QSCN_FAIL && nresult != QSCN_ERR && nresult != QSCN_END)
+	{
+		pmodule->DispatchEventx(NULL, (QINT)QCD_FREE, vpprms, ncount);
 	}
 	pmodule->RemoveModule(NULL);
 	delete pmodule;

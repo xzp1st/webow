@@ -6,52 +6,118 @@
 #include "qmdl_ios.h"
 
 
+static QINT QFontEnum_cb(QENUM vals, QINT flag, QPNT str, QINT *count, QINT value);
+
+qstr_enum_begin(QFontEnum)
+	qstr_enum_cb( QFontEnum_cb )
+qstr_enum_end
+
+static QINT QFontEnum_cb(QENUM vals, QINT flag, QPNT str, QINT *count, QINT value)
+{
+	// 字体格式：name-size
+	QSTR pname, psize;
+	QINT nlen, ncnt, nfont;
+	QCHR vfont[QSTR_BUFF_SIZE];
+	UIFont *pfont;
+	
+	if(str == NULL)
+	{
+		return 0;
+	}
+	ncnt = nlen;
+	nfont = qstrint(0, str, &ncnt);
+	if(ncnt == nlen)
+	{
+		pfont = [UIFont systemFontOfSize:nfont];
+	}
+	else
+	{
+		psize = (QSTR)qstrrchr(QSTR_NONE, str, 0, (QINT)'-');
+		if(psize == NULL)
+		{
+			pname = (QSTR)str;
+			nfont = 16;
+		}
+		else
+		{
+			ncnt = 0;
+			nfont = qstrint(10, psize+1, &ncnt);
+			if(ncnt <= 0)
+			{
+				pname = (QSTR)str;
+				nfont = 16;
+			}
+			else
+			{
+				qstrcpy(vfont, sizeof(vfont), str, (QINT)(psize-(QSTR)str));
+				pname = (QSTR)vfont;
+			}
+		}
+		pfont = [UIFont fontWithName:[NSString stringWithUTF8String:(const char *)pname] size:nfont];
+	}
+	
+	return (QINT)pfont;
+}
+
 UIColor *quiStr2UIColor(QSTR color)
 {
-	QINT nlen, ncount, ncolor, nrcolor, ngcolor, nbcolor, nacolor;
+	QINT ncount, ncolor, nrcolor, ngcolor, nbcolor, nacolor;
 	
 	if(color == NULL)
 	{
 		return nil;
 	}
 	ncount = 0;
-	ncolor = qstr2enum(QUIColor, 1, (QPNT )color, &ncount);
+	ncolor = qstr2enum(QCLREnum, 1, (QPNT)color, &ncount);
 	if(ncount <= 0)
 	{
 		return nil;
 	}
-	if(color[0] != '#')
+	nrcolor = qclrGetRColor(ncolor);
+	ngcolor = qclrGetGColor(ncolor);
+	nbcolor = qclrGetBColor(ncolor);
+	nacolor = qclrGetAColor(ncolor);
+	
+	return [UIColor colorWithRed:nrcolor/255.0 green:ngcolor/255.0 blue:nbcolor/255.0 alpha:nacolor/255.0];
+}
+
+UIColor *quiRGBA2UIColor(QINT color)
+{
+	QINT nrcolor, ngcolor, nbcolor, nacolor;
+	
+	nrcolor = qclrGetRColor(color);
+	ngcolor = qclrGetGColor(color);
+	nbcolor = qclrGetBColor(color);
+	nacolor = qclrGetAColor(color);
+	
+	return [UIColor colorWithRed:nrcolor/255.0 green:ngcolor/255.0 blue:nbcolor/255.0 alpha:nacolor/255.0];
+}
+
+QINT quiUIColor2RGBA(UIColor *color)
+{
+	QINT nrcolor, ngcolor, nbcolor, nacolor;
+	
+	[color getRed:(CGFloat*)&nrcolor green:(CGFloat*)&ngcolor blue:(CGFloat*)&nbcolor alpha:(CGFloat*)&nacolor];
+	
+	return qclrMakeRGBA(nrcolor, ngcolor, nbcolor, nacolor);
+}
+
+NSString *quiUtf82NSString(QSTR str, QINT len)
+{
+	QSTR pstr;
+	QCHR vbuff[QSTR_BUFF_SIZE];
+	
+	if(len <= 0)
 	{
-		nrcolor = qclrGetRColor(ncolor);
-		ngcolor = qclrGetGColor(ncolor);
-		nbcolor = qclrGetBColor(ncolor);
-		nacolor = qclrGetAColor(ncolor);
+		pstr = str;
 	}
 	else
 	{
-		nlen = qstrlen(color);
-		if(nlen <= 6)
-		{
-			return nil;
-		}
-		ncount = 2;
-		nrcolor = qstrint(16, (QPNT )&color[1], &ncount);
-		ncount = 2;
-		ngcolor = qstrint(16, (QPNT )&color[3], &ncount);
-		ncount = 2;
-		nbcolor = qstrint(16, (QPNT )&color[5], &ncount);
-		if(nlen < 8)
-		{
-			nacolor = 255;
-		}
-		else
-		{
-			ncount = 2;
-			nacolor = qstrint(16, (QPNT )&color[7], &ncount);
-		}
+		qstrcpy(vbuff, sizeof(vbuff), str, len);
+		pstr = (QSTR)vbuff;
 	}
 	
-	return [UIColor colorWithRed:nrcolor/255.0 green:ngcolor/255.0 blue:nbcolor/255.0 alpha:nacolor/255.0];
+	return [NSString stringWithUTF8String:(const char *)pstr];
 }
 
 struct qmdl_make_uiview_info
@@ -69,7 +135,7 @@ static QINT qmdl_make_uiview_scan_cb(QPNT url, QPNT name, QPNT value, QINT size,
 	QMDL pparent;
 	struct qmdl_make_uiview_info *pinfo;
 	
-	if(!qstrcmp(QSTR_CMP_ICASE, name, (QPNT )"tag", 0))
+	if(!qstrcmp(QSTR_ICS, name, (QPNT )"tag", 0))
 	{
 		return QSCN_OK;
 	}

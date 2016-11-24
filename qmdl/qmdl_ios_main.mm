@@ -297,10 +297,24 @@ QINT QMain::PopModule(QMDL module)
 		return QNO_FAIL;
 	}
 	dispatch_async(pdelegate.mpqueue, ^{
-		QMDL pmodule, pprev;
-		QUIWindow *pwindow;
+		QMDL pmodule, pprev, pparent;
+		QUIWindow *pwindow, *pwinmdl;
 		
-		pmodule = FindModule(NULL, 0, (QSTR)QPATH_STK, 0);
+		pwinmdl = NULL;
+		if(module != NULL)
+		{
+			pparent = module;
+			while(pparent)
+			{
+				pwinmdl = dynamic_cast<QUIWindow*>(pparent);
+				if(pwinmdl != NULL)
+				{
+					break;
+				}
+				pparent = pparent->ParentModule();
+			}
+		}
+		pmodule = FindModule((QSTR)QPATH_STK, 0, NULL, 0);
 		if(pmodule != NULL)
 		{
 			pmodule = pmodule->TailModule();
@@ -310,13 +324,13 @@ QINT QMain::PopModule(QMDL module)
 		{
 			pprev = pwindow->PrevModule();
 			// 广播模块退栈释放消息。
-			pwindow->PopWindow();
-			if(pwindow == module)
+			[pdelegate.navigation popViewControllerAnimated:YES];
+			if(pwindow == pwinmdl)
 			{
 				// 多级退栈。
 				break;
 			}
-			if(module == NULL)
+			if(pwinmdl == NULL)
 			{
 				// 单级退栈。
 				break;

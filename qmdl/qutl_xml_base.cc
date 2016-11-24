@@ -656,7 +656,7 @@ QHDL qxmlGetAttr(QHDL res, QINT flag, QPNT name, QINT index)
 			{
 				if(name != NULL)
 				{
-					if(pitem->pid != NULL && qstrcmp(QSTR_CMP_ICASE, pitem->pid, name, 0))
+					if(pitem->pid != NULL && qstrcmp(QSTR_ICS, pitem->pid, name, 0))
 					{
 						nmatch = 1;
 					}
@@ -1440,7 +1440,7 @@ QHDL qxmlFind(QHDL res, QPNT path)
 		while(hchild)
 		{
 			pid = (QCHR *)qxmlGetId(hchild);
-			if(pid != NULL && pid[nlen] == 0 && qstrcmp(QSTR_CMP_NONE, pid, pcur, nlen))
+			if(pid != NULL && pid[nlen] == 0 && qstrcmp(QSTR_NONE, pid, pcur, nlen))
 			{
 				break;
 			}

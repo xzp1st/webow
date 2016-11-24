@@ -24,7 +24,7 @@ void QModule::SetMethod(QSTR name, QINT code, QPFN method_fn, QPCB method_cb)
 		if(pitem != NULL)
 		{
 			nmatch = 1;
-			if(pitem->pname != NULL && name != NULL && !qstrcmp(QSTR_CMP_NONE, pitem->pname, name, 0))
+			if(pitem->pname != NULL && name != NULL && !qstrcmp(QSTR_NONE, pitem->pname, name, 0))
 			{
 				nmatch = 0;
 			}
@@ -68,7 +68,7 @@ void QModule::GetMethod(QSTR name, QINT code, QPFN *method_fn, QPCB *method_cb)
 		if(pitem != NULL)
 		{
 			nmatch = 1;
-			if(pitem->pname != NULL && name != NULL && !qstrcmp(QSTR_CMP_NONE, pitem->pname, name, 0))
+			if(pitem->pname != NULL && name != NULL && !qstrcmp(QSTR_NONE, pitem->pname, name, 0))
 			{
 				nmatch = 0;
 			}
@@ -121,7 +121,7 @@ QINT QModule::CallMethodx(QSTR name, QINT code, QPNT params[], QINT count)
 		if(pitem != NULL)
 		{
 			nmatch = 1;
-			if(pitem->pname != NULL && name != NULL && !qstrcmp(QSTR_CMP_NONE, pitem->pname, name, 0))
+			if(pitem->pname != NULL && name != NULL && !qstrcmp(QSTR_NONE, pitem->pname, name, 0))
 			{
 				nmatch = 0;
 			}

@@ -40,22 +40,22 @@
 
 // -- C++类实现
 
-qstr_enum_begin(QUILabelStyleMap)
-	qstr_enum_item( "default",			QUILabelStyleCenter )
-	qstr_enum_item( "top",				QUILabelStyleTop )
-	qstr_enum_item( "bottom",			QUILabelStyleBottom )
-	qstr_enum_item( "left",				QUILabelStyleLeft )
-	qstr_enum_item( "right",			QUILabelStyleRight )
-	qstr_enum_item( "vcenter",			QUILabelStyleVCenter )
-	qstr_enum_item( "hcenter",			QUILabelStyleHCenter )
-	qstr_enum_item( "center",			QUILabelStyleCenter )
+qstr_enum_begin(QLBLSEnum)
+	qstr_enum_item( "default",			QLBLS_Center )
+	qstr_enum_item( "top",				QLBLS_Top )
+	qstr_enum_item( "bottom",			QLBLS_Bottom )
+	qstr_enum_item( "left",				QLBLS_Left )
+	qstr_enum_item( "right",			QLBLS_Right )
+	qstr_enum_item( "vcenter",			QLBLS_VCenter )
+	qstr_enum_item( "hcenter",			QLBLS_HCenter )
+	qstr_enum_item( "center",			QLBLS_Center )
 
-	qstr_enum_item( "wordwrap",			QUILabelStyleWordWrap )
-	qstr_enum_item( "charwrap",			QUILabelStyleCharWrap )
-	qstr_enum_item( "clip",				QUILabelStyleClip )
-	qstr_enum_item( "headtrunc",		QUILabelStyleHeadTrunc )
-	qstr_enum_item( "tailtrunc",		QUILabelStyleTailTrunc )
-	qstr_enum_item( "middletrunc",		QUILabelStyleMiddleTrunc )
+	qstr_enum_item( "wordwrap",			QLBLS_WordWrap )
+	qstr_enum_item( "charwrap",			QLBLS_CharWrap )
+	qstr_enum_item( "clip",				QLBLS_Clip )
+	qstr_enum_item( "headtrunc",		QLBLS_HeadTrunc )
+	qstr_enum_item( "tailtrunc",		QLBLS_TailTrunc )
+	qstr_enum_item( "middletrunc",		QLBLS_MiddleTrunc )
 qstr_enum_end
 
 
@@ -67,38 +67,8 @@ QUILabel::~QUILabel()
 {
 }
 
-QINT QUILabel::MakeModuleBegin(QMDL env, QMDL parent, QXML mxml, QSTR url)
-{
-	QSTR pid;
-	QINT ntag;
-	
-	if(midview != nil)
-	{
-		return QSCN_OK;
-	}
-	ntag = 0;
-	pid = (QSTR)qxmlGetId(mxml);
-	if(pid != NULL && qstrcmp(QSTR_CMP_ICASE, (QPNT)pid, (QPNT)qmdl_name(QUILabel), 0))
-	{
-		midview = FindViewByTag(env, parent, NULL, mxml, url, &ntag);
-		if(midview == nil)
-		{
-			midview = [[QIOSUILabel alloc] initWithModule:this];
-			if(ntag != 0)
-			{
-				((UIView *)midview).tag = ntag;
-			}
-		}
-		
-	}
-	
-	return QSCN_OK;
-}
-
 QINT QUILabelInitStyle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen, ncnt, nstyle, nmode, nalign, nadjust;
 	QUILabel *pview;
 	
 	pview = (QUILabel *)hdl;
@@ -110,80 +80,91 @@ QINT QUILabelInitStyle(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	ncnt = nlen;
-	nstyle = qstr2enum(QUILabelStyleMap, 1, (QPNT )pval, &ncnt);
-	if(ncnt <= 0)
+	if(code == QCD_GET)
 	{
-		return QSCN_OK;
+		QINT *pval, nlen;
+		
+		pval = (QINT*)params[2];
+		nlen = (QINT)params[3];
+		if(pval != NULL)
+		{
+			*pval = pview->mnstyle;
+		}
 	}
-	nmode = 0;
-	if(nstyle & QUILabelStyleWordWrap)
+	else if(code == QCD_SET)
 	{
-		nmode |= UILineBreakModeWordWrap;
-	}
-	if(nstyle & QUILabelStyleCharWrap)
-	{
-		nmode |= UILineBreakModeCharacterWrap;
-	}
-	if(nstyle & QUILabelStyleClip)
-	{
-		nmode |= UILineBreakModeClip;
-	}
-	if(nstyle & QUILabelStyleHeadTrunc)
-	{
-		nmode |= UILineBreakModeHeadTruncation;
-	}
-	if(nstyle & QUILabelStyleTailTrunc)
-	{
-		nmode |= UILineBreakModeTailTruncation;
-	}
-	if(nstyle & QUILabelStyleMiddleTrunc)
-	{
-		nmode |= UILineBreakModeMiddleTruncation;
-	}
-	if(nmode != 0)
-	{
-		((QIOSUILabel *)pview->midview).lineBreakMode = (NSLineBreakMode )nmode;
-	}
-	nalign = 0;
-	if(nstyle & QUILabelStyleLeft)
-	{
-		nalign |= NSTextAlignmentLeft;
-	}
-	if(nstyle & QUILabelStyleRight)
-	{
-		nalign |= NSTextAlignmentRight;
-	}
-	if(nstyle & QUILabelStyleHCenter)
-	{
-		nalign |= NSTextAlignmentCenter;
-	}
-	if(nalign != 0)
-	{
-		((QIOSUILabel *)pview->midview).textAlignment = (NSTextAlignment )nalign;
-	}
-	nadjust = 0;
-	if(nstyle & QUILabelStyleTop)
-	{
-		nalign |= UIBaselineAdjustmentNone;
-	}
-	if(nstyle & QUILabelStyleBottom)
-	{
-		nalign |= UIBaselineAdjustmentAlignBaselines;
-	}
-	if(nstyle & QUILabelStyleVCenter)
-	{
-		nalign |= UIBaselineAdjustmentAlignCenters;
-	}
-	if(nadjust != 0)
-	{
-		((QIOSUILabel *)pview->midview).baselineAdjustment = (UIBaselineAdjustment )nadjust;
-	}
-	if(nstyle & QUILabelStyleFitFont)
-	{
-		((QIOSUILabel *)pview->midview).adjustsFontSizeToFitWidth = YES;
+		QINT nval, nlen, nmode, nalign, nadjust;
+		
+		nval = (QINT)params[2];
+		nlen = (QINT)params[3];
+		nmode = 0;
+		if(nval & QLBLS_WordWrap)
+		{
+			nmode |= UILineBreakModeWordWrap;
+		}
+		if(nval & QLBLS_CharWrap)
+		{
+			nmode |= UILineBreakModeCharacterWrap;
+		}
+		if(nval & QLBLS_Clip)
+		{
+			nmode |= UILineBreakModeClip;
+		}
+		if(nval & QLBLS_HeadTrunc)
+		{
+			nmode |= UILineBreakModeHeadTruncation;
+		}
+		if(nval & QLBLS_TailTrunc)
+		{
+			nmode |= UILineBreakModeTailTruncation;
+		}
+		if(nval & QLBLS_MiddleTrunc)
+		{
+			nmode |= UILineBreakModeMiddleTruncation;
+		}
+		if(nmode != 0)
+		{
+			((QIOSUILabel *)pview->midview).lineBreakMode = (NSLineBreakMode )nmode;
+		}
+		nalign = 0;
+		if(nval & QLBLS_Left)
+		{
+			nalign |= NSTextAlignmentLeft;
+		}
+		if(nval & QLBLS_Right)
+		{
+			nalign |= NSTextAlignmentRight;
+		}
+		if(nval & QLBLS_HCenter)
+		{
+			nalign |= NSTextAlignmentCenter;
+		}
+		if(nalign != 0)
+		{
+			((QIOSUILabel *)pview->midview).textAlignment = (NSTextAlignment )nalign;
+		}
+		nadjust = 0;
+		if(nval & QLBLS_Top)
+		{
+			nadjust |= UIBaselineAdjustmentNone;
+		}
+		if(nval & QLBLS_Bottom)
+		{
+			nadjust |= UIBaselineAdjustmentAlignBaselines;
+		}
+		if(nval & QLBLS_VCenter)
+		{
+			nadjust |= UIBaselineAdjustmentAlignCenters;
+		}
+		if(nadjust != 0)
+		{
+			((QIOSUILabel *)pview->midview).baselineAdjustment = (UIBaselineAdjustment )nadjust;
+		}
+		if(nval & QLBLS_FitFont)
+		{
+			((QIOSUILabel *)pview->midview).adjustsFontSizeToFitWidth = YES;
+		}
+		pview->mnstyle = nval;
 	}
 	
 	return QNO_OK;
@@ -202,16 +183,32 @@ QINT QUILabelInitText(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 	{
 		return QNO_FAIL;
 	}
-	((QIOSUILabel *)pview->midview).text = [NSString stringWithCString: (const char *)params[2] length:(NSUInteger)params[3]];
+	if(code == QCD_GET)
+	{
+		QSTR *pval;
+		QINT *plen;
+		
+		pval = (QSTR*)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = (QSTR)[((QIOSUILabel *)pview->midview).text UTF8String];
+		}
+		if(plen != NULL)
+		{
+			*plen = (QINT)qstrlen((QPNT)[((QIOSUILabel *)pview->midview).text UTF8String]);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		((QIOSUILabel *)pview->midview).text = quiUtf82NSString((QSTR)params[2], (QINT)params[3]);
+	}
 	
 	return QNO_OK;
 }
 
 QINT QUILabelInitFont(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen, ncnt, nfont;
-	QCHR vfont[QSTR_BUFF_SIZE];
 	QUILabel *pview;
 	
 	pview = (QUILabel *)hdl;
@@ -223,18 +220,30 @@ QINT QUILabelInitFont(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	ncnt = nlen;
-	nfont = qstrint(0, pval, &ncnt);
-	if(ncnt == nlen)
+	if(code == QCD_GET)
 	{
-		((QIOSUILabel *)pview->midview).font = [UIFont systemFontOfSize:nfont];
+		__weak UIFont **pval;
+		QINT *plen;
+		
+		pval = (__weak UIFont**)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = ((QIOSUILabel *)pview->midview).font;
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(UIFont*);
+		}
 	}
-	else
+	else if(code == QCD_SET)
 	{
-		qstrscan((QPNT)pval, nlen, (QPNT)"%s-%d", vfont, &nfont);
-		((QIOSUILabel *)pview->midview).font = [UIFont fontWithName:[NSString stringWithUTF8String:(const char *)vfont] size:nfont];
+		UIFont *pval;
+		QINT nlen;
+		
+		pval = (__bridge UIFont*)params[2];
+		nlen = (QINT )params[3];
+		((QIOSUILabel *)pview->midview).font = pval;
 	}
 	
 	return QNO_OK;
@@ -242,8 +251,6 @@ QINT QUILabelInitFont(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 
 QINT QUILabelInitHighlightColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
 	QUILabel *pview;
 	
 	pview = (QUILabel *)hdl;
@@ -255,9 +262,32 @@ QINT QUILabelInitHighlightColor(QHDL hdl, QPNT name, QINT code, QPNT params[], Q
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	((QIOSUILabel *)pview->midview).highlightedTextColor = quiStr2UIColor(pval);
+	if(code == QCD_GET)
+	{
+		QINT *pval, *plen;
+		
+		pval = (QINT*)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = quiUIColor2RGBA(((QIOSUILabel *)pview->midview).highlightedTextColor);
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(QINT);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		QINT nval, nlen;
+		
+		nval = (QINT)params[2];
+		nlen = (QINT)params[3];
+		((QIOSUILabel *)pview->midview).highlightedTextColor = [UIColor colorWithRed:qclrGetRColor(nval)/255.0
+																			   green:qclrGetGColor(nval)/255.0
+																				blue:qclrGetBColor(nval)/255.0
+																			   alpha:qclrGetAColor(nval)/255.0];
+	}
 	
 	return QNO_OK;
 }
@@ -265,8 +295,7 @@ QINT QUILabelInitHighlightColor(QHDL hdl, QPNT name, QINT code, QPNT params[], Q
 
 QINT QUILabelInitShadowColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
+	QINT nval, nlen;
 	QUILabel *pview;
 	
 	pview = (QUILabel *)hdl;
@@ -278,9 +307,32 @@ QINT QUILabelInitShadowColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	((QIOSUILabel *)pview->midview).shadowColor = quiStr2UIColor(pval);
+	if(code == QCD_GET)
+	{
+		QINT *pval, *plen;
+		
+		pval = (QINT*)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = quiUIColor2RGBA(((QIOSUILabel *)pview->midview).shadowColor);
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(QINT);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		QINT nval, nlen;
+		
+		nval = (QINT)params[2];
+		nlen = (QINT)params[3];
+		((QIOSUILabel *)pview->midview).shadowColor = [UIColor colorWithRed:qclrGetRColor(nval)/255.0
+																	  green:qclrGetGColor(nval)/255.0
+																	   blue:qclrGetBColor(nval)/255.0
+																	  alpha:qclrGetAColor(nval)/255.0];
+	}
 	
 	return QNO_OK;
 }
@@ -288,8 +340,6 @@ QINT QUILabelInitShadowColor(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT
 
 QINT QUILabelInitShadowOffset(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval, psep;
-	QINT nlen, ncnt, nxval, nyval;
 	QUILabel *pview;
 	
 	pview = (QUILabel *)hdl;
@@ -301,31 +351,51 @@ QINT QUILabelInitShadowOffset(QHDL hdl, QPNT name, QINT code, QPNT params[], QIN
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	psep = (QSTR)qstrchr(1, (QPNT)pval, nlen, ',');
-
-	ncnt = nlen;
-	nxval = qstrint(0, pval, &ncnt);
-	if(psep == NULL)
+	if(code == QCD_GET)
 	{
-		nyval = ((QIOSUILabel *)pview->midview).shadowOffset.height;
+		CGSize *pval;
+		QINT *plen;
+		
+		pval = (CGSize*)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = ((QIOSUILabel *)pview->midview).shadowOffset;
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(UIFont*);
+		}
 	}
-	else
+	else if(code == QCD_SET)
 	{
-		ncnt = nlen-(psep-pval+1);
-		nyval = qstrint(0, pval, &ncnt);
-	}
+		QSTR pval, psep;
+		QINT nlen, ncnt, nxval, nyval;
+		
+		pval = (QSTR )params[2];
+		nlen = (QINT )params[3];
+		psep = (QSTR)qstrchr(1, (QPNT)pval, nlen, ',');
 
-	((QIOSUILabel *)pview->midview).shadowOffset = CGSizeMake(nxval, nyval);
+		ncnt = nlen;
+		nxval = qstrint(0, pval, &ncnt);
+		if(psep == NULL)
+		{
+			nyval = ((QIOSUILabel *)pview->midview).shadowOffset.height;
+		}
+		else
+		{
+			ncnt = nlen-(psep-pval+1);
+			nyval = qstrint(0, pval, &ncnt);
+		}
+
+		((QIOSUILabel *)pview->midview).shadowOffset = CGSizeMake(nxval, nyval);
+	}
 	
 	return QNO_OK;
 }
 
 QINT QUILabelInitLines(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
-	QSTR pval;
-	QINT nlen;
 	QUILabel *pview;
 	
 	pview = (QUILabel *)hdl;
@@ -337,9 +407,63 @@ QINT QUILabelInitLines(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count
 	{
 		return QNO_FAIL;
 	}
-	pval = (QSTR )params[2];
-	nlen = (QINT )params[3];
-	((QIOSUILabel *)pview->midview).numberOfLines = qstrint(0, pval, &nlen);
+	if(code == QCD_GET)
+	{
+		QINT *pval, *plen;
+		
+		pval = (QINT*)params[2];
+		plen = (QINT*)params[3];
+		if(pval != NULL)
+		{
+			*pval = (QINT)((QIOSUILabel *)pview->midview).numberOfLines;
+		}
+		if(plen != NULL)
+		{
+			*plen = sizeof(QINT);
+		}
+	}
+	else if(code == QCD_SET)
+	{
+		QINT nval, nlen;
+		
+		nval = (QINT)params[2];
+		nlen = (QINT)params[3];
+		((QIOSUILabel *)pview->midview).numberOfLines = (QINT)nval;
+	}
+	
+	return QNO_OK;
+}
+
+static QINT QUILabelOnMake(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QUILabel *plabel;
+	
+	plabel = (QUILabel *)hdl;
+	if(plabel == NULL)
+	{
+		return QNO_OK;
+	}
+	if(plabel->midview == nil)
+	{
+		plabel->midview  = [[QIOSUILabel alloc] initWithModule:plabel];
+	}
+	
+	return QNO_OK;
+}
+
+QINT QUILabelSelfCb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QUILabel *plabel;
+	
+	plabel = (QUILabel *)hdl;
+	if(plabel == NULL)
+	{
+		return QNO_OK;
+	}
+	if(code == QCD_MAKE)
+	{
+		QUILabelOnMake(hdl, name, code, params, count);
+	}
 	
 	return QNO_OK;
 }

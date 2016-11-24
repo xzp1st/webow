@@ -41,7 +41,7 @@ QINT qmdlSend(QMDL env, QSTR name, QINT code, QPNT params[], QINT count);
 
 QINT qmdlChange(QMDL env, QMDL module);
 QINT qmdlPush(QMDL env, QMDL module);
-QINT qmdlPop(QMDL env);
+QINT qmdlPop(QMDL env, QMDL module);
 
 QINT qmdlLoadString(QMDL env, QSTR file, QSTR name, QSTR value, QINT size);
 QINT qmdlGetScreenRect(QMDL env, QRECT *rect);
@@ -122,6 +122,7 @@ public:
 	virtual QINT GetHeight() { return 0; }
 	virtual void SetPosition(QRECT *rect) { return; }
 	virtual void GetPosition(QRECT *rect) { return; }
+	virtual void InvalidateDisplay(QRECT *rect) { return; };
 
 	QINT SetNewline(QINT flag);
 	QINT GetNewline();

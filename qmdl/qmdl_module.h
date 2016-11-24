@@ -90,8 +90,9 @@ public:
 	virtual QINT CallMethodx(QSTR name, QINT code, QPNT params[], QINT count) = 0;
 	virtual QINT CallMethod(QSTR name, QINT code, QINT count, ...) = 0;
 	
-	virtual void SetAttrx(QMDL env, QSTR name, QPNT params[], QINT count) = 0;
-	virtual void SetAttr(QMDL env, QSTR name, QINT count, ...) = 0;
+	virtual QINT SetAttr(QMDL env, QSTR name, QPNT type, QPNT value, QINT len) = 0;
+	virtual QINT GetAttr(QMDL env, QSTR name, QPNT *type, QPNT *value, QINT *len) = 0;
+	virtual void InitAttrs() = 0;
 
 	virtual QINT DiffCount(QMDL module, QINT index) { return 0; };
 	virtual QMDL DiffModule(QMDL module, QINT index) { return NULL; };
@@ -161,8 +162,9 @@ public:
 	virtual QINT CallMethodx(QSTR name, QINT code, QPNT params[], QINT count);
 	virtual QINT CallMethod(QSTR name, QINT code, QINT count, ...);
 	
-	virtual void SetAttrx(QMDL env, QSTR name, QPNT params[], QINT count);
-	virtual void SetAttr(QMDL env, QSTR name, QINT count, ...);
+	virtual QINT SetAttr(QMDL env, QSTR name, QPNT type, QPNT value, QINT len);
+	virtual QINT GetAttr(QMDL env, QSTR name, QPNT *type, QPNT *value, QINT *len);
+	virtual void InitAttrs();
 
 public:
 	QMDL AddParentModule(QMDL child, QMDL parent);
@@ -187,33 +189,39 @@ public:
 	QHDL SetAttrItem(QSTR name, QINT flag);
 	void ClrAttrLink();
 	
-public:
-	QINT mnFlag;
-	QSTR mpName;
-	QSTR mpPath;
-	QINT mnRefer;
-	QPMK mpcbMake;
-	QPNT mpUserData;
-	QPCB mpcbSelf;
-	QPCB mpcbUser;
-	QHDL mhAttrLink;
-	QHDL mhMthdLink;
-	QHDL mhObsrLink;
-	QMDL mpParentModule;
-	QMDL mpPrevModule;
-	QMDL mpNextModule;
-	QMDL mpHeadModule;
-	QMDL mpTailModule;
+	QINT SetInitItem(QPNT name, QPNT type, QPNT value, QINT len);
+	QINT GetInitItem(QPNT name, QPNT *type, QPNT *value, QINT *len);
+	void ClrInitLink();
 	
 public:
-	QINT mnInitDepth;
+	QINT mnFlag;													// 模块标志
+	QSTR mpName;													// 模块名称
+	QSTR mpPath;													// 模块路径
+	QINT mnRefer;													// 模块引用计数
+	QPMK mpcbMake;													// 模块构造函数
+	QPNT mpUserData;												// 用户数据
+	QPCB mpcbSelf;													// 模块私有函数
+	QPCB mpcbUser;													// 用户回调函数
+	QHDL mhAttrLink;												// 模块属性链
+	QHDL mhMthdLink;												// 模块方法链
+	QHDL mhObsrLink;												// 观察者信息链
+	QMDL mpParentModule;											// 父模块
+	QMDL mpPrevModule;												// 上一个孩子模块
+	QMDL mpNextModule;												// 下一个孩子模块
+	QMDL mpHeadModule;												// 第一个孩子模块
+	QMDL mpTailModule;												// 最后一个孩子模块
+	
+public:
+	QINT mnInitDepth;												// 初始化继承深度
+	QHDL mhInitLink;												// 初始化取值缓存
 };
 
 
 QINT qmdlMain(int argc, char * argv[], QPMK main);					// 应用程序入口，具体平台具体实现
 
 #define qmdlExtern(env, path, cls) ((env)?(env)->RegisterModule((path), &(cls)::MakeModule):NULL)	// 声明注册模块
-QMDL qmdlMake(QMDL env, QMDL parent, QPMK cls, QMDL module, QXML mxml, QSTR url);					// 构建模块
+QMDL qmdlMakei(QMDL env, QMDL parent, QPMK cls, QMDL module, QXML mxml, QSTR url);					// 构建模块，不广播Make消息
+QMDL qmdlMake(QMDL env, QMDL parent, QPMK cls, QMDL module, QXML mxml, QSTR url);					// 构建模块，广播Make消息
 QINT qmdlInit(QMDL env, QMDL module, QXML mxml, QSTR url);											// 初始化模块，mxml为空，url创建；mxml非空，url为参数输入
 
 // 取值拷贝：$(name) - url参数取值；${name} - 国际化变量取值；$[name] - 调用者变量取值；
@@ -309,7 +317,7 @@ QINT qmdlCopy(QMDL module, QMDL caller, QPNT params[], QINT count, QPNT url, QPN
 															pmodule->mnInitDepth++;\
 															pcbinit(penv, parent, pmodule, ppath);\
 															pmodule->mnInitDepth--;\
-															qmdlMake(penv, parent, NULL, pmodule, (QXML)vdefine, ppath);\
+															qmdlMakei(penv, parent, NULL, pmodule, (QXML)vdefine, ppath);\
 														}
 #define qmdl_end									};
 														

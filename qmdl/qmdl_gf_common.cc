@@ -22,31 +22,31 @@ CString quiStr2Path(QSTR str, QINT size)
 	}
 	else
 	{
-		if(qstrcmp(QSTR_CMP_ICASE, vprotocol, "res", 0))
+		if(qstrcmp(QSTR_ICS, vprotocol, "res", 0))
 		{
 			strpath += Util::Dir::Program::GetResDir();
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, vprotocol, "xtml", 0))
+		else if(qstrcmp(QSTR_ICS, vprotocol, "xtml", 0))
 		{
 			strpath += Util::Dir::Program::GetXtmlDir();
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, vprotocol, "sysres", 0))
+		else if(qstrcmp(QSTR_ICS, vprotocol, "sysres", 0))
 		{
 			strpath += Util::Dir::Program::GetSysResDir();
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, vprotocol, "sysxtml", 0))
+		else if(qstrcmp(QSTR_ICS, vprotocol, "sysxtml", 0))
 		{
 			strpath += Util::Dir::Program::GetSysXtmlDir();
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, vprotocol, "gpres", 0))
+		else if(qstrcmp(QSTR_ICS, vprotocol, "gpres", 0))
 		{
 			strpath += Util::Dir::Program::GetGamePlusResDir();
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, vprotocol, "gpxtml", 0))
+		else if(qstrcmp(QSTR_ICS, vprotocol, "gpxtml", 0))
 		{
 			strpath += Util::Dir::Program::GetGamePlusXtmlDir();
 		}
-		else if(qstrcmp(QSTR_CMP_ICASE, vprotocol, "locale", 0))
+		else if(qstrcmp(QSTR_ICS, vprotocol, "locale", 0))
 		{
 			strpath += Util::Dir::Program::GetChineseLocaleDir();
 		}

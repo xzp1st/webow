@@ -63,7 +63,19 @@ static QINT qmdl_attach_window_scan_cb(QHDL hdl, QPNT name, QINT code, QPNT para
 	return QSCN_OK;
 }
 
-static QINT qmdl_dispatch_event_scan_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+static QINT qmdl_init_uievent_scan_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QUIView *pview = dynamic_cast<QUIView *>((QMDL)hdl);
+	if(pview == NULL)
+	{
+		return QSCN_OK;
+	}
+	pview->InitUIEvent();
+	
+	return QSCN_OK;
+}
+
+static QINT qmdl_window_event_scan_cb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 {
 	QMDL pmodule = (QMDL)hdl;
 	if(pmodule == NULL)
@@ -150,15 +162,31 @@ static QINT qmdl_dispatch_event_scan_cb(QHDL hdl, QPNT name, QINT code, QPNT par
 
 QUIWindow::QUIWindow()
 {
-	midview = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-	AddPositionRule(QLayoutWidth, NULL, QLayoutNone, 1, [[UIScreen mainScreen] bounds].size.width);
-	AddPositionRule(QLayoutHeight, NULL, QLayoutNone, 1, [[UIScreen mainScreen] bounds].size.height);
-	[(UIView *)midview setBackgroundColor:[UIColor colorWithRed:92/255.0 green:185/255.0 blue:204/255.0 alpha:1.0]];
-	[(UIView *)midview setBackgroundColor:[UIColor lightGrayColor]];
 }
 
 QUIWindow::~QUIWindow()
 {
+}
+
+static QINT QUIWindowOnMake(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
+{
+	QUIWindow *pwindow;
+	
+	pwindow = (QUIWindow *)hdl;
+	if(pwindow == NULL)
+	{
+		return QNO_OK;
+	}
+	if(pwindow->midview == nil)
+	{
+		pwindow->midview = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+		pwindow->AddPositionRule(QLayoutWidth, NULL, QLayoutNone, 1, [[UIScreen mainScreen] bounds].size.width);
+		pwindow->AddPositionRule(QLayoutHeight, NULL, QLayoutNone, 1, [[UIScreen mainScreen] bounds].size.height);
+		[(UIView *)pwindow->midview setBackgroundColor:[UIColor colorWithRed:92/255.0 green:185/255.0 blue:204/255.0 alpha:1.0]];
+		[(UIView *)pwindow->midview setBackgroundColor:[UIColor lightGrayColor]];
+	}
+	
+	return QNO_OK;
 }
 
 QINT QUIWindowSelfCb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
@@ -172,6 +200,7 @@ QINT QUIWindowSelfCb(QHDL hdl, QPNT name, QINT code, QPNT params[], QINT count)
 	}
 	if(code == QCD_MAKE)
 	{
+		QUIWindowOnMake(hdl, name, code, params, count);
 	}
 	
 	return QNO_OK;
@@ -187,7 +216,10 @@ QINT QUIWindow::PushWindow()
 	QINT ncount;
 	QPNT vpprms[8];
 	
-	RegisterModule((QSTR)QPATH_STK, this);
+	if(main != NULL)
+	{
+		main->RegisterModule((QSTR)QPATH_STK, this);
+	}
 	
 	// 创建窗口view。
 	[((QUIWindowController *)midcontroller).view addSubview:midview];
@@ -196,16 +228,14 @@ QINT QUIWindow::PushWindow()
 	ncount = 0;
 	vpprms[ncount++] = (QPNT)this;
 	ScanModulex(this, qmdl_attach_window_scan_cb, NULL, vpprms, ncount);
-	// 广播模块创建消息。
+	// 初始化UIEvent。
 	ncount = 0;
-	vpprms[ncount++] = (QPNT)QCD_MAKE;
-	vpprms[ncount++] = (QPNT)this;
-	ScanModulex(this, qmdl_dispatch_event_scan_cb, NULL, vpprms, ncount);
+	ScanModulex(this, qmdl_init_uievent_scan_cb, NULL, vpprms, ncount);
 	// 广播模块压栈消息。
 	ncount = 0;
 	vpprms[ncount++] = (QPNT)QCD_PUSH;
 	vpprms[ncount++] = (QPNT)this;
-	ScanModulex(this, qmdl_dispatch_event_scan_cb, NULL, vpprms, ncount);
+	ScanModulex(this, qmdl_window_event_scan_cb, NULL, vpprms, ncount);
 	
 	return QNO_OK;
 	
@@ -219,11 +249,7 @@ QINT QUIWindow::PopWindow()
 	ncount = 0;
 	vpprms[ncount++] = (QPNT)QCD_POP;
 	vpprms[ncount++] = (QPNT)this;
-	ScanModulex(this, qmdl_dispatch_event_scan_cb, NULL, vpprms, ncount);
-	ncount = 0;
-	vpprms[ncount++] = (QPNT)QCD_FREE;
-	vpprms[ncount++] = (QPNT)this;
-	ScanModulex(this, qmdl_dispatch_event_scan_cb, NULL, vpprms, ncount);
+	ScanModulex(this, qmdl_window_event_scan_cb, NULL, vpprms, ncount);
 	
 	UnregisterModule(NULL, NULL);
 	
@@ -250,7 +276,7 @@ QINT QUIWindow::PaintWindow()
 	ncount = 0;
 	vpprms[ncount++] = (QPNT)QCD_PAINT;
 	vpprms[ncount++] = (QPNT)this;
-	ScanModulex(this, qmdl_dispatch_event_scan_cb, NULL, vpprms, ncount);
+	ScanModulex(this, qmdl_window_event_scan_cb, NULL, vpprms, ncount);
 	
 	return QNO_OK;
 }

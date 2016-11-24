@@ -95,7 +95,7 @@ QINT qmdlPush(QMDL env, QMDL module)
 	return pmain->PushModule(module);
 }
 
-QINT qmdlPop(QMDL env)
+QINT qmdlPop(QMDL env, QMDL module)
 {
 	QMDL pmodule;
 	QBaseMain *pmain;
@@ -115,7 +115,7 @@ QINT qmdlPop(QMDL env)
 		return QNO_FAIL;
 	}
 	
-	return pmain->PopModule(env);
+	return pmain->PopModule(module);
 }
 
 QINT qmdlLoadString(QMDL env, QSTR file, QSTR name, QSTR value, QINT size)

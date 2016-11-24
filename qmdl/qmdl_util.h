@@ -277,7 +277,7 @@ struct qxml_item_info
 	QINT nsize;													// 结点长度
 	QSTR pid;													// 结点ID
 	
-	QPNT ptag;													// 结点标签
+	QSTR ptag;													// 结点标签
 	QINT nval;													// 结点取值（整形）
 	QPNT pval;													// 结点取值（指针）
 	QPCB pcbval;												// 结点取值（处理函数）
@@ -288,7 +288,7 @@ struct qxml_item_info
 														{	(QHDL)qchkhdl, (QINT)(flag)|QLCN_HXML,\
 															NULL, NULL, (QINT)sizeof(struct qxml_item_info),\
 															(QSTR)(ID),\
-															(QPNT)(tag), (QINT)(valn), (QPNT)(valp), (QPCB)(valcb)\
+															(QSTR)(tag), (QINT)(valn), (QPNT)(valp), (QPCB)(valcb)\
 														}
 // XML树结构定义
 #define qxml_begin(name)								const struct qxml_item_info name[] =\
@@ -343,8 +343,8 @@ QINT qxmlGetPath(QHDL src, QHDL dst, QPNT path, QINT size);		// 读取资源所�
 QHDL qxmlFind(QHDL mxml, QPNT path);							// 查找资源结点，path - 查找路径，格式：id1[.id2.id3....]
 
 QINT qxmlGetFlag(QHDL mxml);									// 读取资源标志
-QPNT qxmlGetTag(QHDL mxml);										// 读取资源标签指针
-QPNT qxmlGetId(QHDL mxml);										// 读取资源ID指针
+QSTR qxmlGetTag(QHDL mxml);										// 读取资源标签指针
+QSTR qxmlGetId(QHDL mxml);										// 读取资源ID指针
 QINT qxmlGetSize(QHDL mxml);									// 读取资源大小
 QPNT qxmlGetValp(QHDL mxml);									// 读取资源指针取值
 QINT qxmlGetValn(QHDL mxml);									// 读取资源整形取值
@@ -428,10 +428,31 @@ QHDL qprmGetValue(QHDL list, QPNT name, QINT *index, QHDL *define, QPNT *value);
 	
 // -- 字符串
 
-#define QSTR_CMP_NONE							0x00000000		// 空标志
-#define QSTR_CMP_ICASE							0x00000001		// 不区分大小写
-#define QSTR_CMP_PATTERN						0x00000002		// 模式匹配
-
+#define QSTR_NONE								0x00000000		// 空标志
+#define QSTR_ICS								0x00000001		// 不区分大小写
+#define QSTR_PTN								0x00000002		// 模式匹配
+													
+#define QSTR_DEC								0x00000010		// 十进制数字
+#define QSTR_HEX								0x00000020		// 十六进制数字
+#define QSTR_AWD								0x00000040		// ASCII词语，[a~z][A~Z][0~9][_]
+#define QSTR_UWD								0x00000080		// UNICODE词语
+#define QSTR_SYM								0x00000100		// 符号
+													
+#define QSTR_SSTR								0x00000200		// 单引号字符串，'...'
+#define QSTR_DSTR								0x00000400		// 双引号字符串，"..."
+#define QSTR_BLK								0x00000800		// 串块，(name)、[name]、{name}、<name>
+#define QSTR_VAL								0x00001000		// 取值，$name、$(name)、$[name]、${name}、$<name>
+#define QSTR_OBJ								0x00002000		// 对象，@name、@(name)、@[name]、@{name}、@<name>
+#define QSTR_URL								0x00004000		// 资源，/a/b/.../c.d....?e=f&g=h&...
+													
+#define QSTR_NUM								(QSTR_DEC|QSTR_HEX)			// 数字
+#define QSTR_WORD								(QSTR_AWD|QSTR_UWD)			// 词语
+#define QSTR_ASC								(QSTR_NUM|QSTR_SYM|QSTR_AWD)// ASC类
+#define QSTR_UNI								(QSTR_ASC|QSTR_UWD)			// UNICODE类
+#define QSTR_STR								(QSTR_SSTR|QSTR_DSTR)		// 字符串
+#define QSTR_VAR								(QSTR_VAL|QSTR_OBJ)			// 变量
+#define QSTR_ALL								(QSTR_UNI|QSTR_STR|QSTR_VAR|QSTR_URL)
+													
 // 字符串参数遍历函数
 typedef QINT (*qstr_prm_cb)(QPNT str, QINT chr, QINT index, QPNT param, QINT size, QPNT params[], QINT count);
 
@@ -449,30 +470,6 @@ QINT qstrprm(QPNT str, QUCHR chr, QINT index, QPNT param, QINT size);					// 读
 QINT qstrprmcbx(QPNT str, QUCHR chr, qstr_prm_cb prm_cb, QPNT params[], QINT count);	// 遍历字符串参数，输入为数组
 QINT qstrprmcb(QPNT str, QUCHR chr, qstr_prm_cb prm_cb, QINT count, ...);				// 遍历字符串参数，输入为不定参数
 QPNT qstrnext(QPNT str, QINT *size);													// 读取下一字符
-
-#define QSTR_MATCH_NONE							0x00000000		// 空内容
-#define QSTR_MATCH_ICS							0x00000001		// 大小写不区分
-													
-#define QSTR_MATCH_DEC							0x00000002		// 十进制数字
-#define QSTR_MATCH_HEX							0x00000004		// 十六进制数字
-#define QSTR_MATCH_AWD							0x00000010		// ASCII词语，[a~z][A~Z][0~9][_]
-#define QSTR_MATCH_UWD							0x00000020		// UNICODE词语
-#define QSTR_MATCH_SYM							0x00000040		// 符号
-
-#define QSTR_MATCH_SSTR							0x00000100		// 单引号字符串，'...'
-#define QSTR_MATCH_DSTR							0x00000200		// 双引号字符串，"..."
-#define QSTR_MATCH_BLK							0x00000400		// 串块，(name)、[name]、{name}、<name>
-#define QSTR_MATCH_VAL							0x00000800		// 取值，$name、$(name)、$[name]、${name}、$<name>
-#define QSTR_MATCH_OBJ							0x00001000		// 对象，@name、@(name)、@[name]、@{name}、@<name>
-#define QSTR_MATCH_URL							0x00002000		// 资源，/a/b/.../c.d....?e=f&g=h&...
-
-#define QSTR_MATCH_NUM							(QSTR_MATCH_DEC|QSTR_MATCH_HEX)			// 数字
-#define QSTR_MATCH_WORD							(QSTR_MATCH_AWD|QSTR_MATCH_UWD)			// 词语
-#define QSTR_MATCH_ASC							(QSTR_MATCH_NUM|QSTR_MATCH_SYM|QSTR_MATCH_AWD)// ASC类
-#define QSTR_MATCH_UNI							(QSTR_MATCH_ASC|QSTR_MATCH_UWD)			// UNICODE类
-#define QSTR_MATCH_STR							(QSTR_MATCH_SSTR|QSTR_MATCH_DSTR)		// 字符串
-#define QSTR_MATCH_VAR							(QSTR_MATCH_VAL|QSTR_MATCH_OBJ)			// 变量
-#define QSTR_MATCH_ALL							(QSTR_MATCH_UNI|QSTR_MATCH_STR|QSTR_MATCH_VAR|QSTR_MATCH_URL)
 
 QINT qstrmatch(QSTR str, QINT size, QINT *flag, QSTR *read, QINT *len);					// 字符串匹配，[字母_][数字][符号]，以' '、'\t'、'\r'、'\n'为分隔
 
@@ -585,34 +582,40 @@ QINT qbuffree(QHDL buf);
 struct qstrenum_item
 {
 	QPNT pstr;													// 字符串
-	QINT nvalue;												// 位值
+	QINT nvalue;												// 枚举值
 };
 
 struct qstrenum_data
 {
 	QHDL hcheck;												// 字符串
-	QINT nflag;													// 位值
+	QINT nflag;													// 枚举标志
 	struct qstrenum_item *pitems;
 };
-
-typedef const struct qstrenum_data *QBITS;
 													
-// 字符串位表声明
+typedef const struct qstrenum_data *QENUM;						// 枚举定义
+													
+typedef QINT (*qstrenum_cb)(QENUM vals, QINT flag, QPNT str, QINT *count, QINT value);	// 枚举自定义函数，str!=NULL时定制qstr2enum，==NULL时定制qstr4enum
+													
+// 字符串枚举声明
 #define qstr_enum_extern(name)			extern const struct qstrenum_data *name
-// 字符串位表定义
+// 字符串枚举定义
 #define qstr_enum_begin(name)			extern const struct qstrenum_item name##list[];\
 										const struct qstrenum_data name##data = { (QHDL)qchkhdl, (QINT)QLCN_HENM, (struct qstrenum_item *)name##list };\
 										const struct qstrenum_data *name = &name##data;\
 										const struct qstrenum_item name##list[] =\
 										{
-#define qstr_enum_item(name, value)			{ (QPNT)name, (QINT )value },
+#define qstr_enum_cb(cb)					{ (QPNT)NULL, (QINT)cb },
+#define qstr_enum_item(name, value)			{ (QPNT)name, (QINT)value },
 #define qstr_enum_end						{ NULL, 0 }\
 										};
 
-QPNT qstr4enum(QBITS bits, QINT value);							// 位值转字符串
-QINT qstr2enum(QBITS bits, QINT flag, QPNT str, QINT *count);	// 字符串转位值
-
-
+QPNT qstr4enum(QENUM vals, QINT value);							// 枚举转字符串
+QINT qstr2enum(QENUM vals, QINT flag, QPNT str, QINT *count);	// 字符串转枚举
+													
+QPNT qstr4enumi(QENUM vals, QINT value);						// 默认枚举转字符串，忽略定制函数
+QINT qstr2enumi(QENUM vals, QINT flag, QPNT str, QINT *count);	// 默认字符串转枚举，忽略定制函数
+													
+													
 // -- URL
 
 /*******************************************************************
@@ -743,9 +746,7 @@ QINT qhash_mpqstr_equal_cb(QHDL hash, QPNT key1, QPNT key2, QPNT params[], QINT 
 #define QCLR_LTMAGENTA				qclrMakeRGBA(255, 0  , 255, 255)
 #define QCLR_YELLOW					qclrMakeRGBA(255, 255, 0  , 255)
 
-qstr_enum_extern(QUIColor);
+qstr_enum_extern(QCLREnum);
 													
-QCLR quiStr2Color(QSTR color, QINT size);
-
 
 #endif

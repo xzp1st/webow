@@ -96,7 +96,7 @@ static QHDL qprm_find_and_make_path(QHDL mem, QINT make, QHDL list, QPNT path, Q
 		while(pchild)
 		{
 			pchildname = (QSTR)qxmlGetId(pchild);
-			if(pchildname != NULL && qstrcmp(QSTR_CMP_ICASE, pchildname, pname, nlen))
+			if(pchildname != NULL && qstrcmp(QSTR_ICS, pchildname, pname, nlen))
 			{
 				break;
 			}
@@ -503,7 +503,7 @@ MAKE_HXML:
 						break;
 					}
 					psrcname = (QSTR)qxmlGetId(psrcxml);
-					if(psrcname != NULL && qstrcmp(QSTR_CMP_NONE, psrcname, pdstname, 0))
+					if(psrcname != NULL && qstrcmp(QSTR_NONE, psrcname, pdstname, 0))
 					{
 						break;
 					}
@@ -571,7 +571,7 @@ MAKE_HPRM:
 					break;
 				}
 				psrcname = (QSTR)qxmlGetId(psrcxml);
-				if(psrcname != NULL && qstrcmp(QSTR_CMP_NONE, psrcname, pdstname, 0))
+				if(psrcname != NULL && qstrcmp(QSTR_NONE, psrcname, pdstname, 0))
 				{
 					break;
 				}
@@ -1045,7 +1045,7 @@ QPNT qprmconvert(QHDL dsttype, QPNT buff, QINT *size, QHDL srctype, QPNT srcval,
 	{
 		//
 	}
-	else if(srctype == qstr)
+	else if(srctype == qstr || srctype == NULL)
 	{
 		if(dsttype == qint)
 		{
@@ -1054,11 +1054,11 @@ QPNT qprmconvert(QHDL dsttype, QPNT buff, QINT *size, QHDL srctype, QPNT srcval,
 		}
 		else if(dsttype == qbool)
 		{
-			if(qstrcmp(QSTR_CMP_ICASE, srcval, (QPNT)"true", 0))
+			if(qstrcmp(QSTR_ICS, srcval, (QPNT)"true", 0))
 			{
 				pval = (QPNT)1;
 			}
-			else if(qstrcmp(QSTR_CMP_ICASE, srcval, (QPNT)"false", 0))
+			else if(qstrcmp(QSTR_ICS, srcval, (QPNT)"false", 0))
 			{
 				pval = (QPNT)0;
 			}
@@ -1070,7 +1070,7 @@ QPNT qprmconvert(QHDL dsttype, QPNT buff, QINT *size, QHDL srctype, QPNT srcval,
 		}
 		else if(qmcheck(dsttype, QLCN_HENM))
 		{
-			pval = (QPNT)qstr2enum((QBITS)dsttype, 1, srcval, &nlen);
+			pval = (QPNT)qstr2enum((QENUM)dsttype, 1, srcval, &nlen);
 			nlen = sizeof(QINT);
 		}
 	}

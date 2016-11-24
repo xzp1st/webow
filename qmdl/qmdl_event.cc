@@ -34,12 +34,12 @@ static QINT qmdl_observer_free_cb(QHDL hdl, QPNT name, QINT code, QPNT params[],
         return QSCN_OK;
     }
     pmodule = (QModule *)pevent->pobserver;
-    if(pmodule != NULL)
+    if(pmodule != NULL && pevent->hobsritem != hdl)
     {
         pmodule->RemObserver((QHDL )pevent);
     }
     pmodule = (QModule *)pevent->pobserved;
-    if(pmodule != NULL)
+    if(pmodule != NULL && pevent->hobsditem != hdl)
     {
         pmodule->RemObserved((QHDL )pevent);
     }
@@ -254,7 +254,7 @@ void QModule::WaitEvent(QMDL module, QSTR name, QINT code, QINT flag, QPFN event
 				if( (pevent->pobserved == pobserved) && (pevent->pobserver == this) && !(pevent->nflag & QWAIT_NOREPLACE) )
 				{
 					nmatch = 1;
-					if( (pevent->pname != NULL) && (name != NULL) && !qstrcmp(QSTR_CMP_NONE, pevent->pname, name, 0) )
+					if( (pevent->pname != NULL) && (name != NULL) && !qstrcmp(QSTR_NONE, pevent->pname, name, 0) )
 					{
 						nmatch = 0;
 					}
@@ -348,7 +348,7 @@ void QModule::DispatchEventx(QSTR name, QINT code, QPNT params[], QINT count)
                 if(pevent->pobserved == this)
                 {
 					nmatch = 1;
-					if( (pevent->pname != NULL) && (name != NULL) && !qstrcmp(QSTR_CMP_NONE, pevent->pname, name, 0) )
+					if( (pevent->pname != NULL) && (name != NULL) && !qstrcmp(QSTR_NONE, pevent->pname, name, 0) )
 					{
 						nmatch = 0;
 					}

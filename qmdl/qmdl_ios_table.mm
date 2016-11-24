@@ -58,7 +58,7 @@ QINT QUIList::MakeModuleBegin(QMDL env, QMDL parent, QXML mxml, QSTR url)
 		return QSCN_OK;
 	}
 	pid = (QSTR)qxmlGetId(mxml);
-	if(pid != NULL && qstrcmp(QSTR_CMP_ICASE, (QPNT)pid, (QPNT)qmdl_name(QUISlider), 0))
+	if(pid != NULL && qstrcmp(QSTR_ICS, (QPNT)pid, (QPNT)qmdl_name(QUISlider), 0))
 	{
 		ntag = 0;
 		midview = FindViewByTag(env, parent, NULL, mxml, url, &ntag);

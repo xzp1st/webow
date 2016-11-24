@@ -709,7 +709,7 @@ QINT qhash_commonstr_value_cb(QHDL hash, QPNT key, QPNT params[], QINT count)
 
 QINT qhash_commonstr_equal_cb(QHDL hash, QPNT key1, QPNT key2, QPNT params[], QINT count)
 {
-	return qstrcmp(QSTR_CMP_NONE, key1, key2, 0);
+	return qstrcmp(QSTR_NONE, key1, key2, 0);
 }
 
 QINT qhash_phpstr_value_cb(QHDL hash, QPNT key, QPNT params[], QINT count)
@@ -732,7 +732,7 @@ QINT qhash_phpstr_value_cb(QHDL hash, QPNT key, QPNT params[], QINT count)
 
 QINT qhash_phpstr_equal_cb(QHDL hash, QPNT key1, QPNT key2, QPNT params[], QINT count)
 {
-	return qstrcmp(QSTR_CMP_NONE, key1, key2, 0);
+	return qstrcmp(QSTR_NONE, key1, key2, 0);
 }
 
 // mysql
@@ -753,7 +753,7 @@ QINT qhash_calcstr_value_cb(QHDL hash, QPNT key, QPNT params[], QINT count)
 
 QINT qhash_calcstr_equal_cb(QHDL hash, QPNT key1, QPNT key2, QPNT params[], QINT count)
 {
-	return qstrcmp(QSTR_CMP_NONE, key1, key2, 0);
+	return qstrcmp(QSTR_NONE, key1, key2, 0);
 }
 
 QINT qhash_calcstr2_value_cb(QHDL hash, QPNT key, QPNT params[], QINT count)
@@ -777,7 +777,7 @@ QINT qhash_calcstr2_value_cb(QHDL hash, QPNT key, QPNT params[], QINT count)
 
 QINT qhash_calcstr2_equal_cb(QHDL hash, QPNT key1, QPNT key2, QPNT params[], QINT count)
 {
-	return qstrcmp(QSTR_CMP_NONE, key1, key2, 0);
+	return qstrcmp(QSTR_NONE, key1, key2, 0);
 }
 
 // MPQ¸Ä½ø°æ
@@ -859,6 +859,6 @@ QINT qhash_mpqstr_value_cb(QHDL hash, QPNT key, QPNT params[], QINT count)
 
 QINT qhash_mpqdstr_equal_cb(QHDL hash, QPNT key1, QPNT key2, QPNT params[], QINT count)
 {
-	return qstrcmp(QSTR_CMP_NONE, key1, key2, 0);
+	return qstrcmp(QSTR_NONE, key1, key2, 0);
 }
 
